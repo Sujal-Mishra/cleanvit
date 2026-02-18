@@ -63,16 +63,6 @@
         </div>
     </div>
 
-    <!-- OTP Modal -->
-    <div id="otp-modal" class="auth-card"
-        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 100px rgba(0,0,0,0.5); width: 90%; max-width: 400px;">
-        <h3 class="auth-title" style="font-size: 1.5rem;">Verify Email</h3>
-        <p class="auth-subtitle">Enter OTP sent to your email (Check console for prototype)</p>
-        <input type="text" class="form-input" id="otp-input" placeholder="123456"
-            style="margin: 1.5rem 0; letter-spacing: 5px; text-align: center; font-size: 1.5rem;">
-        <button class="btn btn-success btn-block" onclick="verifyOtp()">Verify & Create</button>
-    </div>
-
     <!-- Dashboard Section -->
     <div id="dashboard-section" class="dashboard" style="display: none;">
         <aside class="sidebar">
@@ -378,25 +368,35 @@
         }
 
         async function signup() {
+            // Updated to direct signup
             const email = document.getElementById('su-email').value;
+            const password = document.getElementById('su-password').value;
+            const name = document.getElementById('su-name').value;
+            const block = document.getElementById('su-block').value;
+            const roomNumber = document.getElementById('su-room').value;
+
             if (!email.endsWith('@vitstudent.ac.in')) {
                 alert('Please use VIT email (@vitstudent.ac.in)');
                 return;
             }
 
             try {
-                const res = await fetch(`${API_URL}/auth/student/signup`, {
+                // Modified to call a new direct signup endpoint or reuse verify logic adapted for direct signup
+                // Since we are removing OTP, we'll hit a new endpoint or modified one. 
+                // Let's assume we change backend to accept everything at once.
+                // For now, I will modify the fetch to point to a new hypothetical endpoint /api/auth/student/register
+                // But I also need to update the backend. Let's send to /api/auth/student/signup-direct
+
+                const res = await fetch(`${API_URL}/auth/student/signup-direct`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email, password, name, block, roomNumber })
                 });
                 const data = await res.json();
 
                 if (res.ok) {
-                    document.getElementById('otp-modal').style.display = 'block';
-                    document.getElementById('auth-section').style.opacity = '0.3';
-                    console.log('OTP:', data.otp);
-                    alert('OTP sent! Check console for prototype code.');
+                    alert('Account created! Please login.');
+                    toggleAuth('login');
                 } else {
                     alert(data.error);
                 }
@@ -405,31 +405,7 @@
             }
         }
 
-        async function verifyOtp() {
-            const otp = document.getElementById('otp-input').value;
-            const email = document.getElementById('su-email').value;
-            const password = document.getElementById('su-password').value;
-            const name = document.getElementById('su-name').value;
-            const block = document.getElementById('su-block').value;
-            const roomNumber = document.getElementById('su-room').value;
-
-            try {
-                const res = await fetch(`${API_URL}/auth/student/verify-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, otp, password, name, block, roomNumber })
-                });
-
-                if (res.ok) {
-                    alert('Account created! Please login.');
-                    location.reload();
-                } else {
-                    alert('Invalid OTP');
-                }
-            } catch (e) {
-                alert('Verification failed');
-            }
-        }
+        // verifyOtp function removed
 
         function initDashboard() {
             const token = localStorage.getItem('token');

@@ -97,6 +97,45 @@ def admin_page():
 
 # ----------------- AUTH API -----------------
 
+@app.route('/api/auth/student/signup-direct', methods=['POST'])
+def student_signup_direct():
+    if not supabase: return jsonify({'error': 'Database not configured'}), 500
+    
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    block = data.get('block')
+    room_number = data.get('roomNumber')
+
+    if not email or not email.endswith('@vitstudent.ac.in'):
+        return jsonify({'error': 'Please use a valid VIT email address'}), 400
+        
+    # Check if user exists
+    existing = supabase.table('users').select('id').eq('email', email).execute()
+    if existing.data:
+        return jsonify({'error': 'Email already registered'}), 400
+    
+    hashed = hash_password(password)
+    group_no = f"{block}-{room_number}"
+    
+    try:
+        # Create User
+        user_res = supabase.table('users').insert({
+            'email': email,
+            'password': hashed,
+            'name': name,
+            'block': block,
+            'room_number': room_number,
+            'group_no': group_no,
+            'role': 'student'
+        }).execute()
+        
+        return jsonify({'message': 'Account created successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Legacy OTP routes kept but not used by new frontend
 @app.route('/api/auth/student/signup', methods=['POST'])
 def student_signup_otp():
     if not supabase: return jsonify({'error': 'Database not configured'}), 500
