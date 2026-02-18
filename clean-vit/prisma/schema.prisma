@@ -1,0 +1,74 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          String   // STUDENT, CLEANER, ADMIN
+  name          String
+  createdAt     DateTime @default(now())
+  
+  studentProfile StudentProfile?
+  cleanerProfile CleanerProfile?
+}
+
+model StudentProfile {
+  id        String @id @default(uuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+  regNo     String @unique
+  block     String
+  roomNo    String
+  
+  // Room Group Relation
+  groupId   String
+  group     RoomGroup @relation(fields: [groupId], references: [id])
+}
+
+model CleanerProfile {
+  id            String @id @default(uuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  assignedBlock String
+  
+  // Requests managed by cleaner
+  requests      Request[]
+}
+
+model RoomGroup {
+  id       String           @id @default(uuid())
+  block    String
+  roomNo   String
+  students StudentProfile[]
+  requests Request[]
+
+  @@unique([block, roomNo])
+}
+
+model Request {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  status         String   // PENDING, IN_PROGRESS, COMPLETED
+  
+  // Relations
+  groupId        String
+  group          RoomGroup @relation(fields: [groupId], references: [id])
+  
+  cleanerId      String?
+  cleaner        CleanerProfile? @relation(fields: [cleanerId], references: [id])
+  
+  acceptedAt     DateTime?
+  completedAt    DateTime?
+  
+  qrCodeSecret   String?  @default(uuid()) // Used to generate the QR code
+  rating         Int?     // 1 to 5
+}

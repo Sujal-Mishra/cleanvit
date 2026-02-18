@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean VIT - Room Cleaning Management</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="startup-container">
+        <!-- Animated Background Orbs -->
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <!-- Logo Section -->
+        <div class="logo-container">
+            <div class="logo">
+                <div class="logo-icon">🧹</div>
+            </div>
+            <h1 class="logo-text">Clean VIT</h1>
+            <p class="tagline">VIT Vellore Room Cleaning Management System</p>
+        </div>
+
+        <!-- Portal Selection -->
+        <div class="portals-grid">
+            <!-- Student Portal -->
+            <div class="portal-card student" onclick="navigateTo('student')">
+                <div class="portal-icon">🎓</div>
+                <h2 class="portal-title">Student Portal</h2>
+                <p class="portal-desc">Generate cleaning requests, view history, and rate services</p>
+            </div>
+
+            <!-- Cleaner Portal -->
+            <div class="portal-card cleaner" onclick="navigateTo('cleaner')">
+                <div class="portal-icon">👷</div>
+                <h2 class="portal-title">Cleaner Portal</h2>
+                <p class="portal-desc">Accept requests, manage jobs, and scan QR codes</p>
+            </div>
+        </div>
+
+        <!-- Admin Quick Access -->
+        <div style="margin-top: 3rem; text-align: center;">
+            <a href="/admin" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">
+                Admin Login →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(portal) {
+            if (portal === 'student') {
+                window.location.href = '/student';
+            } else if (portal === 'cleaner') {
+                window.location.href = '/cleaner';
+            }
+        }
+    </script>
+</body>
+
+</html>

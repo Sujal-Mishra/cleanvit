@@ -1,0 +1,9 @@
+flask
+flask-cors
+python-dotenv
+supabase
+bcrypt
+pyjwt
+qrcode
+pillow
+gunicorn

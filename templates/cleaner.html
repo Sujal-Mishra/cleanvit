@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean VIT - Cleaner Portal</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <!-- Auth Section -->
+    <div id="auth-section" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="/" class="auth-back">← Back to Home</a>
+                <h1 class="auth-title">Cleaner Login</h1>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Employee ID</label>
+                    <input type="text" class="form-input" id="emp-id" placeholder="CLN001" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="dashboard" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">👷</div>
+                <div class="sidebar-logo-text">Cleaner Portal</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showView('pending', this)">
+                    <div class="nav-icon"><i data-lucide="list"></i></div>
+                    Pending
+                </a>
+                <a href="#" class="nav-item" onclick="showView('active', this)">
+                    <div class="nav-icon"><i data-lucide="activity"></i></div>
+                    Active Jobs
+                </a>
+                <a href="#" class="nav-item" onclick="showView('history', this)">
+                    <div class="nav-icon"><i data-lucide="clock"></i></div>
+                    History
+                </a>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-info">
+                    <div class="user-avatar">C</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Cleaner Name</div>
+                        <div class="user-role">Cleaner</div>
+                    </div>
+                </div>
+                <div class="user-block" id="assigned-blocks">Blocks: A, B</div>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="pending-view">
+                <header class="page-header">
+                    <h1 class="page-title">Pending Tasks</h1>
+                    <p class="page-subtitle">Accept tasks to start working</p>
+                </header>
+                <div class="requests-grid" id="pending-requests"></div>
+            </div>
+
+            <div id="active-view" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">My Active Jobs</h1>
+                    <p class="page-subtitle">Complete jobs by scanning QR codes</p>
+                </header>
+                <div class="requests-grid" id="active-requests"></div>
+            </div>
+
+            <div id="history-view" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">Job History</h1>
+                    <p class="page-subtitle">Past completed jobs and ratings</p>
+                </header>
+                <div class="requests-grid" id="history-requests"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+
+        async function login(e) {
+            e.preventDefault();
+            const employeeId = document.getElementById('emp-id').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/cleaner/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('cleaner_token', data.token);
+                    localStorage.setItem('cleaner', JSON.stringify(data.cleaner));
+                    initDashboard();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert('Login failed');
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        function initDashboard() {
+            const token = localStorage.getItem('cleaner_token');
+            if (!token) return;
+
+            const cleaner = JSON.parse(localStorage.getItem('cleaner'));
+            document.getElementById('user-name').textContent = cleaner.name;
+            document.getElementById('assigned-blocks').textContent = `Blocks: ${cleaner.blocks.join(', ')}`;
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'flex';
+
+            fetchPending();
+            fetchRequests();
+        }
+
+        function showView(view, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            document.getElementById('pending-view').style.display = 'none';
+            document.getElementById('active-view').style.display = 'none';
+            document.getElementById('history-view').style.display = 'none';
+
+            if (view === 'pending') {
+                document.getElementById('pending-view').style.display = 'block';
+                fetchPending();
+            } else if (view === 'active') {
+                document.getElementById('active-view').style.display = 'block';
+                fetchRequests();
+            } else if (view === 'history') {
+                document.getElementById('history-view').style.display = 'block';
+                fetchRequests();
+            }
+        }
+
+        async function fetchPending() {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests/pending`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
+
+            const grid = document.getElementById('pending-requests');
+            grid.innerHTML = '';
+
+            if (reqs.length === 0) {
+                grid.innerHTML = '<p class="text-muted">No pending requests in your blocks.</p>';
+                return;
+            }
+
+            reqs.forEach(req => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.innerHTML = `
+                    <div class="request-header">
+                        <span class="request-id">${req.request_id}</span>
+                        <span class="request-status status-pending">PENDING</span>
+                    </div>
+                    <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                    <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                    ${req.instructions ? `<p class="text-muted text-sm">"${req.instructions}"</p>` : ''}
+                    <button class="btn btn-primary btn-block" style="margin-top: 1rem;" onclick="acceptTask('${req.id}')">
+                        Accept Task
+                    </button>
+                    <div class="text-xs text-muted mt-2">Requested by ${req.student_name}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function fetchRequests() {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
+
+            const activeGrid = document.getElementById('active-requests');
+            const historyGrid = document.getElementById('history-requests');
+            if (activeGrid) activeGrid.innerHTML = '';
+            if (historyGrid) historyGrid.innerHTML = '';
+
+            reqs.forEach(req => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+
+                if (['in_progress', 'accepted'].includes(req.status)) {
+                    if (!activeGrid) return;
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">${req.request_id}</span>
+                            <span class="request-status status-inprogress" style="background: rgba(0, 200, 83, 0.15); color: #00C853;">IN PROGRESS</span>
+                        </div>
+                        <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                        <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                        ${req.instructions ? `<p class="text-muted text-sm">"${req.instructions}"</p>` : ''}
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-success btn-block" onclick="completeTask('${req.id}')">
+                                <i data-lucide="scan-line"></i> Verify & Complete
+                            </button>
+                        </div>
+                         <div class="text-xs text-muted mt-2">Accepted: ${new Date(req.accepted_at).toLocaleString()}</div>
+                    `;
+                    activeGrid.appendChild(card);
+                } else if (req.status === 'completed') {
+                    if (!historyGrid) return;
+                    let ratingHtml = '<div class="text-muted mt-2">Not rated yet</div>';
+                    if (req.rating) {
+                        ratingHtml = `
+                            <div class="mt-2" style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">
+                                <div class="text-warning">Rating: ${'★'.repeat(req.rating)}${'☆'.repeat(5 - req.rating)}</div>
+                                ${req.feedback ? `<div class="text-xs text-muted mt-1">"${req.feedback}"</div>` : ''}
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">${req.request_id}</span>
+                            <span class="request-status status-completed" style="background: #e0f2f1; color: #00897b;">COMPLETED</span>
+                        </div>
+                        <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                         <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                        <div class="text-xs text-muted mt-2">
+                             <div>Accepted: ${new Date(req.accepted_at).toLocaleString()}</div>
+                             <div>Completed: ${new Date(req.completed_at).toLocaleString()}</div>
+                        </div>
+                        ${ratingHtml}
+                    `;
+                    historyGrid.appendChild(card);
+                }
+            });
+
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<p class="text-muted">No active jobs.</p>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<p class="text-muted">No cleaning history.</p>';
+            lucide.createIcons();
+        }
+
+        async function acceptTask(id) {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests/${id}/accept`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert('Task Accepted!');
+                showView('active');
+            }
+        }
+
+        async function completeTask(id) {
+            const qrData = prompt("Scan Student QR Code (Enter Request ID):");
+            if (!qrData) return;
+
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests/${id}/complete`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ qrData })
+            });
+
+            if (res.ok) {
+                alert('Job Completed!');
+                fetchActive();
+            } else {
+                alert('Verification Failed (Invalid Request ID)');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('cleaner_token');
+            localStorage.removeItem('cleaner');
+            location.reload();
+        }
+
+        if (localStorage.getItem('cleaner_token')) {
+            initDashboard();
+        }
+    </script>
+</body>
+
+</html>

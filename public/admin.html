@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Clean VIT</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Auth Section -->
+    <div class="auth-container" id="authSection">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a class="auth-back" href="/">← Back to Home</a>
+                <h1 class="auth-title">Admin Login</h1>
+                <p class="auth-subtitle">Enter admin credentials</p>
+            </div>
+            
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="loginUsername" placeholder="admin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                    Login
+                </button>
+            </form>
+            
+            <div class="auth-footer mt-3">
+                <p class="text-muted" style="font-size: 0.85rem;">
+                    Demo: admin / admin123
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div class="dashboard hidden" id="dashboardSection">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">🧹</div>
+                <span class="sidebar-logo-text">Clean VIT</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a class="nav-item active" onclick="showPage('stats')">
+                    <span class="nav-icon">📊</span>
+                    Dashboard
+                </a>
+                <a class="nav-item" onclick="showPage('requests')">
+                    <span class="nav-icon">📋</span>
+                    All Requests
+                </a>
+                <a class="nav-item" onclick="showPage('cleaners')">
+                    <span class="nav-icon">👷</span>
+                    Manage Cleaners
+                </a>
+            </nav>
+            
+            <div class="sidebar-user">
+                <div class="user-info">
+                    <div class="user-avatar" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%);">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stats Page -->
+            <div id="statsPage">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Overview of the cleaning management system</p>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="statToday">0</div>
+                        <div class="stat-label">Today's Requests</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-value" id="statRating">0.0</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-icon">👷</div>
+                        <div class="stat-value" id="statCleaners">0</div>
+                        <div class="stat-label">Active Cleaners</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Requests by Status</h3>
+                        </div>
+                        <div id="statusChart">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Requests by Block</h3>
+                        </div>
+                        <div id="blockChart">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3 class="card-title">Performance Metrics</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="text-align: center; padding: 1rem;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--primary);" id="metricHours">0</div>
+                            <div class="text-muted">Avg. Completion Time (hrs)</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--success);" id="metricStudents">0</div>
+                            <div class="text-muted">Total Students</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requests Page -->
+            <div id="requestsPage" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title">All Requests</h1>
+                    <p class="page-subtitle">View and manage all cleaning requests</p>
+                </div>
+
+                <div class="filter-row">
+                    <select class="filter-select" id="requestFilterStatus" onchange="loadAllRequests()">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    
+                    <select class="filter-select" id="requestFilterBlock" onchange="loadAllRequests()">
+                        <option value="">All Blocks</option>
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="A3">A3</option>
+                        <option value="A4">A4</option>
+                        <option value="A5">A5</option>
+                        <option value="B1">B1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="B4">B4</option>
+                        <option value="B5">B5</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Student</th>
+                                <th>Block</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTable">
+                            <!-- Will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cleaners Page -->
+            <div id="cleanersPage" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Manage Cleaners</h1>
+                    <p class="page-subtitle">Add, edit, or remove cleaners</p>
+                </div>
+
+                <button class="btn btn-primary mb-3" onclick="openCleanerModal()">
+                    + Add New Cleaner
+                </button>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Assigned Blocks</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cleanersTable">
+                            <!-- Will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Cleaner Modal -->
+    <div class="modal-overlay" id="cleanerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="cleanerModalTitle">Add New Cleaner</h3>
+                <button class="modal-close" onclick="closeCleanerModal()">×</button>
+            </div>
+            
+            <form onsubmit="saveCleaner(event)">
+                <input type="hidden" id="cleanerId">
+                
+                <div class="form-group">
+                    <label class="form-label">Employee ID</label>
+                    <input type="text" class="form-input" id="cleanerEmployeeId" placeholder="e.g., CLN004" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="cleanerName" placeholder="Enter full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="cleanerPassword" placeholder="Enter password (leave blank to keep current)">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Assigned Blocks</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;" id="blocksSelection">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    Save Cleaner
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let allBlocks = ['A1', 'A2', 'A3', 'A4', 'A5', 'B1', 'B2', 'B3', 'B4', 'B5', 'C1', 'C2', 'C3', 'C4', 'C5', 'D1', 'D2', 'D3', 'D4', 'D5'];
+
+        // Check auth on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('adminToken');
+            const user = localStorage.getItem('adminUser');
+            
+            if (token && user) {
+                currentUser = JSON.parse(user);
+                showDashboard();
+            }
+        });
+
+        // Auth functions
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            
+            try {
+                const res = await fetch('/api/auth/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) throw new Error(data.error);
+                
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('adminUser', JSON.stringify(data.admin));
+                currentUser = data.admin;
+                
+                showToast('Welcome back, Admin!', 'success');
+                showDashboard();
+                
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Login';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            currentUser = null;
+            
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Dashboard functions
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            
+            showPage('stats');
+        }
+
+        function showPage(page) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event?.target?.classList.add('active');
+            
+            document.getElementById('statsPage').classList.add('hidden');
+            document.getElementById('requestsPage').classList.add('hidden');
+            document.getElementById('cleanersPage').classList.add('hidden');
+            
+            if (page === 'stats') {
+                document.getElementById('statsPage').classList.remove('hidden');
+                loadStats();
+            } else if (page === 'requests') {
+                document.getElementById('requestsPage').classList.remove('hidden');
+                loadAllRequests();
+            } else if (page === 'cleaners') {
+                document.getElementById('cleanersPage').classList.remove('hidden');
+                loadCleaners();
+            }
+        }
+
+        // Stats functions
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                
+                const stats = await res.json();
+                
+                document.getElementById('statTotal').textContent = stats.totalRequests || 0;
+                document.getElementById('statToday').textContent = stats.todayRequests || 0;
+                document.getElementById('statRating').textContent = stats.avgRating || '0.0';
+                document.getElementById('statCleaners').textContent = stats.activeCleaners || 0;
+                document.getElementById('metricHours').textContent = stats.avgCompletionHours || '0';
+                document.getElementById('metricStudents').textContent = stats.totalStudents || 0;
+                
+                // Status chart
+                const statusData = stats.requestsByStatus || [];
+                const statusColors = { pending: 'var(--warning)', in_progress: 'var(--info)', completed: 'var(--success)' };
+                
+                document.getElementById('statusChart').innerHTML = statusData.length > 0 
+                    ? statusData.map(s => `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid var(--border);">
+                            <span style="text-transform: capitalize;">${s.status.replace('_', ' ')}</span>
+                            <span style="font-weight: 600; color: ${statusColors[s.status] || 'var(--text-primary)'}">${s.count}</span>
+                        </div>
+                    `).join('')
+                    : '<p class="text-muted">No data available</p>';
+                
+                // Block chart
+                const blockData = stats.requestsByBlock || [];
+                const maxCount = Math.max(...blockData.map(b => b.count), 1);
+                
+                document.getElementById('blockChart').innerHTML = blockData.length > 0
+                    ? blockData.slice(0, 10).map(b => `
+                        <div style="padding: 0.5rem 0;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>${b.block}</span>
+                                <span>${b.count}</span>
+                            </div>
+                            <div style="height: 6px; background: var(--surface-light); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${(b.count / maxCount) * 100}%; background: var(--primary); border-radius: 3px;"></div>
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<p class="text-muted">No data available</p>';
+                
+            } catch (err) {
+                showToast('Failed to load stats', 'error');
+            }
+        }
+
+        // Requests functions
+        async function loadAllRequests() {
+            const tbody = document.getElementById('requestsTable');
+            const status = document.getElementById('requestFilterStatus').value;
+            const block = document.getElementById('requestFilterBlock').value;
+            
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading"><div class="spinner"></div></div></td></tr>';
+            
+            try {
+                const res = await fetch(`/api/admin/requests?status=${status}&block=${block}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                
+                const requests = await res.json();
+                
+                if (requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No requests found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = requests.map(req => `
+                    <tr>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">${req.request_id}</td>
+                        <td>${req.student_name || 'N/A'}</td>
+                        <td>${req.block} - ${req.room_number}</td>
+                        <td>${req.type}</td>
+                        <td><span class="request-status status-${req.status}">${req.status.replace('_', ' ')}</span></td>
+                        <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                        <td>${req.rating ? '★'.repeat(req.rating) : '-'}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-error">Failed to load requests</td></tr>';
+            }
+        }
+
+        // Cleaners functions
+        async function loadCleaners() {
+            const tbody = document.getElementById('cleanersTable');
+            
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="loading"><div class="spinner"></div></div></td></tr>';
+            
+            try {
+                const res = await fetch('/api/admin/cleaners', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                
+                const cleaners = await res.json();
+                
+                if (cleaners.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No cleaners found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = cleaners.map(c => `
+                    <tr>
+                        <td style="font-family: 'JetBrains Mono', monospace;">${c.employee_id}</td>
+                        <td>${c.name}</td>
+                        <td>
+                            <div class="block-tags">
+                                ${(c.assigned_blocks || []).map(b => `<span class="block-tag">${b}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="request-status ${c.is_active ? 'status-completed' : 'status-pending'}">
+                                ${c.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editCleaner(${c.id}, '${c.name}', '${c.employee_id}', '${JSON.stringify(c.assigned_blocks).replace(/'/g, "\\'")}', ${c.is_active})">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCleaner(${c.id})" style="margin-left: 0.5rem;">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-error">Failed to load cleaners</td></tr>';
+            }
+        }
+
+        function openCleanerModal(cleaner = null) {
+            document.getElementById('cleanerModalTitle').textContent = cleaner ? 'Edit Cleaner' : 'Add New Cleaner';
+            document.getElementById('cleanerId').value = cleaner ? cleaner.id : '';
+            document.getElementById('cleanerEmployeeId').value = cleaner ? cleaner.employee_id : '';
+            document.getElementById('cleanerName').value = cleaner ? cleaner.name : '';
+            document.getElementById('cleanerPassword').value = '';
+            document.getElementById('cleanerEmployeeId').disabled = !!cleaner;
+            
+            // Generate blocks checkboxes
+            const blocksContainer = document.getElementById('blocksSelection');
+            blocksContainer.innerHTML = allBlocks.map(block => `
+                <label style="display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem; background: var(--surface-light); border-radius: 8px; cursor: pointer;">
+                    <input type="checkbox" name="blocks" value="${block}" ${cleaner && cleaner.assigned_blocks && cleaner.assigned_blocks.includes(block) ? 'checked' : ''}>
+                    <span style="font-size: 0.85rem;">${block}</span>
+                </label>
+            `).join('');
+            
+            document.getElementById('cleanerModal').classList.add('active');
+        }
+
+        function closeCleanerModal() {
+            document.getElementById('cleanerModal').classList.remove('active');
+        }
+
+        function editCleaner(id, name, employeeId, assignedBlocks, isActive) {
+            openCleanerModal({ id, name, employee_id: employeeId, assigned_blocks: JSON.parse(assignedBlocks), is_active: isActive });
+        }
+
+        async function saveCleaner(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('cleanerId').value;
+            const employeeId = document.getElementById('cleanerEmployeeId').value;
+            const name = document.getElementById('cleanerName').value;
+            const password = document.getElementById('cleanerPassword').value;
+            
+            const selectedBlocks = Array.from(document.querySelectorAll('input[name="blocks"]:checked')).map(cb => cb.value);
+            
+            if (selectedBlocks.length === 0) {
+                showToast('Please select at least one block', 'warning');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/admin/cleaners${id ? '/' + id : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ 
+                        employeeId, 
+                        name, 
+                        password: password || undefined,
+                        assignedBlocks: selectedBlocks 
+                    })
+                });
+                
+                if (!res.ok) throw new Error('Failed to save cleaner');
+                
+                showToast('Cleaner saved successfully!', 'success');
+                closeCleanerModal();
+                loadCleaners();
+                
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteCleaner(id) {
+            if (!confirm('Are you sure you want to delete this cleaner?')) return;
+            
+            try {
+                const res = await fetch(`/api/admin/cleaners/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                
+                if (!res.ok) throw new Error('Failed to delete cleaner');
+                
+                showToast('Cleaner deleted successfully!', 'success');
+                loadCleaners();
+                
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // Toast function
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

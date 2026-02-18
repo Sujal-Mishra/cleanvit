@@ -1,0 +1,6 @@
+@echo off
+echo Installing dependencies...
+python -m pip install -r requirements.txt
+echo Starting Clean VIT Server...
+python app.py
+pause

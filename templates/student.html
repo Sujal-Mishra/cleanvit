@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean VIT - Student Portal</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <!-- Auth Section -->
+    <div id="auth-section" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="/" class="auth-back">← Back to Home</a>
+                <h1 class="auth-title">Student Login</h1>
+                <p class="auth-subtitle">Enter your credentials to access the portal</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="email" placeholder="student@vitstudent.ac.in" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+
+            <form id="signup-form" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="su-name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">VIT Email</label>
+                    <input type="email" class="form-input" id="su-email" placeholder="@vitstudent.ac.in" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Block</label>
+                        <input type="text" class="form-input" id="su-block" placeholder="Q" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Room No</label>
+                        <input type="text" class="form-input" id="su-room" placeholder="101" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="su-password" required>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" onclick="signup()">Create Account</button>
+            </form>
+
+            <div class="auth-footer" id="auth-footer">
+                Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Modal -->
+    <div id="otp-modal" class="auth-card"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 100px rgba(0,0,0,0.5); width: 90%; max-width: 400px;">
+        <h3 class="auth-title" style="font-size: 1.5rem;">Verify Email</h3>
+        <p class="auth-subtitle">Enter OTP sent to your email (Check console for prototype)</p>
+        <input type="text" class="form-input" id="otp-input" placeholder="123456"
+            style="margin: 1.5rem 0; letter-spacing: 5px; text-align: center; font-size: 1.5rem;">
+        <button class="btn btn-success btn-block" onclick="verifyOtp()">Verify & Create</button>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="dashboard" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">🎓</div>
+                <div class="sidebar-logo-text">Student Portal</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showDashboard('overview', this)">
+                    <div class="nav-icon"><i data-lucide="layout-dashboard"></i></div>
+                    Overview
+                </a>
+                <a href="#" class="nav-item" onclick="showDashboard('history', this)">
+                    <div class="nav-icon"><i data-lucide="clock"></i></div>
+                    History
+                </a>
+                <a href="#" class="nav-item" onclick="showDashboard('roommates', this)">
+                    <div class="nav-icon"><i data-lucide="users"></i></div>
+                    Roommates
+                </a>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-info">
+                    <div class="user-avatar">S</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Student Name</div>
+                        <div class="user-role">Student</div>
+                    </div>
+                </div>
+                <div class="user-block" id="user-block-room">Block - Room</div>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Overview Section -->
+            <div id="view-overview">
+                <header class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Manage your room cleaning requests</p>
+                </header>
+
+                <!-- Request Form Card -->
+                <div class="card mb-4" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">New Request</h3>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Request Type</label>
+                            <select class="form-select" id="req-type">
+                                <option value="Normal Cleaning">Normal Cleaning (Brooming + Mopping)</option>
+                                <option value="Deep Cleaning">Deep Cleaning</option>
+                                <option value="Washroom Cleaning">Washroom Cleaning</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Instructions (Optional)</label>
+                            <input type="text" class="form-input" id="req-instructions"
+                                placeholder="e.g. Please come after 2 PM">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="createRequest()">
+                        <i data-lucide="sparkles"></i> Request Cleaning
+                    </button>
+                </div>
+
+                <!-- Active Requests -->
+                <h3 class="page-title" style="font-size: 1.25rem;">Active Requests</h3>
+                <div class="requests-grid" id="active-requests" style="margin-top: 1rem;">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="view-history" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">Request History</h1>
+                    <p class="page-subtitle">Past cleaning records</p>
+                </header>
+                <div class="requests-grid" id="history-requests">
+                    <!-- JS will populate -->
+                </div>
+            </div>
+
+            <!-- Roommates Section -->
+            <div id="view-roommates" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">Roommates</h1>
+                    <p class="page-subtitle">Students in your room group</p>
+                </header>
+                <div class="requests-grid" id="roommates-grid">
+                    <!-- JS will populate -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+
+        function showDashboard(view, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            if (view === 'overview') {
+                document.getElementById('view-overview').style.display = 'block';
+                document.getElementById('view-history').style.display = 'none';
+                document.getElementById('view-roommates').style.display = 'none';
+            } else if (view === 'history') {
+                document.getElementById('view-overview').style.display = 'none';
+                document.getElementById('view-history').style.display = 'block';
+                document.getElementById('view-roommates').style.display = 'none';
+                fetchRequests();
+            } else if (view === 'roommates') {
+                document.getElementById('view-overview').style.display = 'none';
+                document.getElementById('view-history').style.display = 'none';
+                document.getElementById('view-roommates').style.display = 'block';
+                fetchRoommates();
+            }
+        }
+
+        async function fetchRequests() {
+            console.log("Fetching requests...");
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
+            console.log("Requests received:", reqs);
+
+            const activeGrid = document.getElementById('active-requests');
+            const historyGrid = document.getElementById('history-requests');
+            if (activeGrid) activeGrid.innerHTML = '';
+            if (historyGrid) historyGrid.innerHTML = '';
+
+            reqs.forEach(req => {
+                const createdDate = new Date(req.created_at).toLocaleString();
+                const completedDate = req.completed_at ? new Date(req.completed_at).toLocaleString() : '-';
+
+                const card = document.createElement('div');
+                card.className = 'request-card';
+
+                let statusBadge = `<span class="request-status status-${req.status.toLowerCase()}">${req.status}</span>`;
+
+                if (['pending', 'in_progress', 'accepted'].includes(req.status)) {
+                    if (!activeGrid) return;
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">${req.request_id}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="card-title">${req.type}</div>
+                        <p class="portal-desc">${req.instructions || ''}</p>
+                        <p class="text-xs text-muted mt-2">Created: ${createdDate}</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #fff; border-radius: 8px; text-align: center;">
+                            <img src="${req.qr_code}" alt="QR Code" width="100" style="display: block; margin: 0 auto;">
+                            <p style="font-size: 0.8rem; color: #333; margin-top: 5px;">Scan to complete</p>
+                        </div>
+                    `;
+                    activeGrid.appendChild(card);
+                } else {
+                    console.log("Adding to history:", req);
+                    if (!historyGrid) return;
+                    let ratingHtml = '';
+                    if (req.status === 'completed') {
+                        if (req.rating) {
+                            ratingHtml = `<div class="text-warning mt-2">Rated: ${'★'.repeat(req.rating)}${'☆'.repeat(5 - req.rating)}</div>`;
+                        } else {
+                            ratingHtml = `
+                                <button class="btn btn-sm btn-primary mt-3" onclick="openRating('${req.id}')">Rate Service</button>
+                            `;
+                        }
+                    }
+
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">${req.request_id}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="card-title">${req.type}</div>
+                        <p class="portal-desc">${req.instructions || ''}</p>
+                        <div class="text-xs text-muted mt-2">
+                             <div>Created: ${createdDate}</div>
+                             <div>Completed: ${completedDate}</div>
+                        </div>
+                        ${ratingHtml}
+                    `;
+                    historyGrid.appendChild(card);
+                }
+            });
+
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<p class="text-muted">No active requests.</p>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<p class="text-muted">No history found.</p>';
+
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        async function openRating(id) {
+            const rating = prompt("Rate 1-5 stars:");
+            if (rating && rating >= 1 && rating <= 5) {
+                const feedback = prompt("Any feedback? (Optional)");
+                const token = localStorage.getItem('token');
+
+                const res = await fetch(`${API_URL}/requests/${id}/rate`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ rating: parseInt(rating), feedback })
+                });
+
+                if (res.ok) {
+                    alert("Thank you for your feedback!");
+                    fetchRequests();
+                }
+            } else if (rating) {
+                alert("Please enter a number between 1 and 5");
+            }
+        }
+
+        async function fetchRoommates() {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/student/roommates`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const users = await res.json();
+
+            const grid = document.getElementById('roommates-grid');
+            grid.innerHTML = '';
+
+            if (users.length === 0) {
+                grid.innerHTML = '<p class="text-muted">No roommates found.</p>';
+                return;
+            }
+
+            users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.25rem;">${user.name.charAt(0)}</div>
+                        <div>
+                            <div class="card-title">${user.name}</div>
+                            <p class="portal-desc">${user.email}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function login(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/student/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    initDashboard();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Login failed');
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        function toggleAuth(mode) {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const footer = document.getElementById('auth-footer');
+            const title = document.querySelector('.auth-title');
+
+            if (mode === 'signup') {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                title.textContent = 'Student Registration';
+                footer.innerHTML = `Already have an account? <a href="#" onclick="toggleAuth('login')">Sign In</a>`;
+            } else {
+                signupForm.style.display = 'none';
+                loginForm.style.display = 'block';
+                title.textContent = 'Student Login';
+                footer.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>`;
+            }
+        }
+
+        async function signup() {
+            const email = document.getElementById('su-email').value;
+            if (!email.endsWith('@vitstudent.ac.in')) {
+                alert('Please use VIT email (@vitstudent.ac.in)');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/student/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('otp-modal').style.display = 'block';
+                    document.getElementById('auth-section').style.opacity = '0.3';
+                    console.log('OTP:', data.otp);
+                    alert('OTP sent! Check console for prototype code.');
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) {
+                alert('Signup failed');
+            }
+        }
+
+        async function verifyOtp() {
+            const otp = document.getElementById('otp-input').value;
+            const email = document.getElementById('su-email').value;
+            const password = document.getElementById('su-password').value;
+            const name = document.getElementById('su-name').value;
+            const block = document.getElementById('su-block').value;
+            const roomNumber = document.getElementById('su-room').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/student/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp, password, name, block, roomNumber })
+                });
+
+                if (res.ok) {
+                    alert('Account created! Please login.');
+                    location.reload();
+                } else {
+                    alert('Invalid OTP');
+                }
+            } catch (e) {
+                alert('Verification failed');
+            }
+        }
+
+        function initDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-block-room').textContent = `${user.block} Block - ${user.roomNumber}`;
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'flex';
+
+            fetchRequests();
+        }
+
+        async function createRequest() {
+            const type = document.getElementById('req-type').value;
+            const instructions = document.getElementById('req-instructions').value;
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(`${API_URL}/requests`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ type, instructions })
+            });
+
+            if (res.ok) {
+                alert('Request Created!');
+                fetchRequests();
+            } else {
+                alert('Failed to create request');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        if (localStorage.getItem('token')) {
+            initDashboard();
+        }
+    </script>
+</body>
+
+</html>

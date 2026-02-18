@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean VIT - Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Auth Section -->
+    <div id="auth-section" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="/" class="auth-back">← Back to Home</a>
+                <h1 class="auth-title">Admin Login</h1>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="username" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="dashboard" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">🛡️</div>
+                <div class="sidebar-logo-text">Admin Panel</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <div class="nav-icon"><i data-lucide="bar-chart"></i></div>
+                    Overview
+                </a>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-block" style="text-align: center; margin-bottom: 1rem;">Admin</div>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1 class="page-title">System Overview</h1>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card info">
+                    <div class="stat-icon"><i data-lucide="users"></i></div>
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-icon"><i data-lucide="clock"></i></div>
+                    <div class="stat-value" id="stat-pending">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-icon"><i data-lucide="check-circle"></i></div>
+                    <div class="stat-value" id="stat-completed">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </div>
+
+            <!-- Analytics & Reviews -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <!-- Block Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Request Distribution</h3>
+                    </div>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="blocksChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Reviews -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Reviews</h3>
+                    </div>
+                    <div id="reviews-list" style="max-height: 250px; overflow-y: auto;">
+                        <p class="text-muted text-sm">Loading reviews...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cleaners Management -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Manage Cleaners</h3>
+                    <button class="btn btn-primary btn-sm" onclick="openAddCleanerModal()">Add New</button>
+                </div>
+                <div class="requests-grid" id="cleaners-grid">
+                    <!-- Cleaners will be populated here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Add Cleaner Modal -->
+    <div id="add-cleaner-modal" class="auth-card"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 100px rgba(0,0,0,0.5); width: 90%; max-width: 400px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 class="auth-title" style="font-size: 1.5rem; margin: 0;">Add Cleaner</h3>
+            <button onclick="closeAddCleanerModal()"
+                style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+        </div>
+        <form id="add-cleaner-form">
+            <div class="form-group">
+                <label class="form-label">Employee ID</label>
+                <input type="text" class="form-input" id="c-empid" placeholder="CLN00X" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-input" id="c-name" placeholder="John Doe" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="c-password" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Assigned Blocks (comma separated)</label>
+                <input type="text" class="form-input" id="c-blocks" placeholder="A, B, C" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Cleaner</button>
+        </form>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+        let statsChart = null;
+
+        // Globals
+        const modal = document.getElementById('add-cleaner-modal');
+        const form = document.getElementById('add-cleaner-form');
+
+        async function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('admin_token', data.token);
+                    initDashboard();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert('Login failed');
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        function initDashboard() {
+            if (!localStorage.getItem('admin_token')) return;
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'flex';
+
+            fetchStats();
+            fetchCleaners();
+
+            // Refresh every 10 seconds
+            setInterval(fetchStats, 10000);
+        }
+
+        function openAddCleanerModal() {
+            modal.style.display = 'block';
+        }
+
+        function closeAddCleanerModal() {
+            modal.style.display = 'none';
+            form.reset();
+        }
+
+        async function fetchStats() {
+            try {
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch(`${API_URL}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 403 || res.status === 401) {
+                    logout();
+                    return;
+                }
+                const data = await res.json();
+
+                // Update Cards
+                document.getElementById('stat-total').textContent = data.totalRequests;
+                document.getElementById('stat-pending').textContent = data.pendingRequests;
+                document.getElementById('stat-completed').textContent = data.completedRequests;
+
+                // Update Chart
+                if (data.blockStats) {
+                    const ctx = document.getElementById('blocksChart').getContext('2d');
+                    if (statsChart) {
+                        statsChart.data.labels = data.blockStats.labels;
+                        statsChart.data.datasets[0].data = data.blockStats.data;
+                        statsChart.update();
+                    } else {
+                        statsChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.blockStats.labels,
+                                datasets: [{
+                                    label: '# of Requests',
+                                    data: data.blockStats.data,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: { y: { beginAtZero: true } }
+                            }
+                        });
+                    }
+                }
+
+                // Update Reviews
+                const reviewsList = document.getElementById('reviews-list');
+                if (data.recentReviews && data.recentReviews.length > 0) {
+                    reviewsList.innerHTML = '';
+                    data.recentReviews.forEach(r => {
+                        const stars = '⭐'.repeat(r.rating);
+                        const div = document.createElement('div');
+                        div.style.padding = '0.75rem';
+                        div.style.borderBottom = '1px solid #eee';
+                        div.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                                <strong>${r.student}</strong>
+                                <span style="font-size:0.8rem; color:#666;">${new Date(r.date).toLocaleDateString()}</span>
+                            </div>
+                            <div style="font-size:0.9rem;">${stars}</div>
+                            <div style="font-size:0.9rem; color:#444; margin-top:0.25rem;">"${r.feedback || 'No comments'}"</div>
+                            <div style="font-size:0.8rem; color:#888; margin-top:0.25rem;">Cleaner: ${r.cleaner}</div>
+                        `;
+                        reviewsList.appendChild(div);
+                    });
+                } else {
+                    reviewsList.innerHTML = '<p class="text-muted text-sm p-3">No reviews yet.</p>';
+                }
+
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        }
+
+        async function fetchCleaners() {
+            try {
+                const token = localStorage.getItem('admin_token');
+                if (!token) return;
+
+                const res = await fetch(`${API_URL}/admin/cleaners`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const cleaners = await res.json();
+
+                const grid = document.getElementById('cleaners-grid');
+                grid.innerHTML = '';
+
+                if (cleaners.length === 0) {
+                    grid.innerHTML = '<p class="text-muted">No cleaners found.</p>';
+                    return;
+                }
+
+                cleaners.forEach(c => {
+                    const blocks = c.assigned_blocks ? JSON.parse(c.assigned_blocks).join(", ") : "None";
+                    const card = document.createElement('div');
+                    card.className = 'request-card'; // Reuse style
+                    card.innerHTML = `
+                    <div class="card-title">${c.name} (${c.employee_id})</div>
+                    <p class="portal-desc">Blocks: ${blocks}</p>
+                    <div class="text-xs text-muted mt-2">Active: ${c.is_active ? 'Yes' : 'No'}</div>
+                `;
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Error fetching cleaners", err);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('admin_token');
+
+            const blocksStr = document.getElementById('c-blocks').value;
+            const blocks = blocksStr.split(',').map(b => b.trim().toUpperCase()).filter(b => b);
+
+            const data = {
+                employeeId: document.getElementById('c-empid').value,
+                name: document.getElementById('c-name').value,
+                password: document.getElementById('c-password').value,
+                blocks: blocks
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/admin/cleaners`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert('Cleaner added successfully');
+                    closeAddCleanerModal();
+                    fetchCleaners();
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert('Failed to add cleaner');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('admin_token');
+            location.reload();
+        }
+
+        if (localStorage.getItem('admin_token')) {
+            initDashboard();
+        }
+    </script>
+</body>
+
+</html>
