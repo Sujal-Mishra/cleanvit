@@ -252,7 +252,25 @@
     <div class="orb orb-3"></div>
 
     <div class="startup-container">
-        <div class="main-container">
+        <!-- Initial Hero Landing -->
+        <div id="landing-hero" style="text-align: center; max-width: 800px; padding: 2rem;">
+            <h1
+                style="font-size: 4rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; background: linear-gradient(to right, #ffffff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Is Your Room <br> <span style="color: var(--primary); -webkit-text-fill-color: var(--primary);">Getting
+                    Messy?</span>
+            </h1>
+            <p
+                style="font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Don't stress. Schedule a cleaning service in seconds and get back to what matters.
+            </p>
+            <button onclick="showPortals()" class="btn btn-primary"
+                style="font-size: 1.1rem; padding: 1rem 3rem; border-radius: 50px; box-shadow: 0 10px 30px rgba(255, 107, 0, 0.4);">
+                Get Started <i data-lucide="arrow-right" style="margin-left: 8px;"></i>
+            </button>
+        </div>
+
+        <!-- Main Portal Content (Hidden initially) -->
+        <div id="main-content" class="main-container" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
             <div class="hero-section">
                 <div style="font-size: 4rem; margin-bottom: 1rem; text-shadow: 0 10px 30px rgba(0,0,0,0.5);">🧹</div>
                 <h1
@@ -299,6 +317,27 @@
 
     <script>
         lucide.createIcons();
+
+        function showPortals() {
+            const hero = document.getElementById('landing-hero');
+            const main = document.getElementById('main-content');
+
+            hero.style.opacity = '0';
+            hero.style.transform = 'translateY(-20px)';
+            hero.style.transition = 'all 0.5s ease';
+
+            setTimeout(() => {
+                hero.style.display = 'none';
+                main.style.display = 'block';
+                // Trigger reflow
+                void main.offsetWidth;
+                main.style.opacity = '1';
+
+                // Re-animate orbs
+                document.querySelector('.orb-1').style.top = '-5%';
+                document.querySelector('.orb-2').style.bottom = '-5%';
+            }, 500);
+        }
     </script>
 </body>
 
