@@ -114,6 +114,42 @@
         </main>
     </div>
 
+    <!-- Cleaner Profile Modal -->
+    <div id="cleaner-profile-modal" class="auth-card"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 100px rgba(0,0,0,0.5); width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+            <div>
+                <h3 class="auth-title" style="font-size: 1.5rem; margin: 0; line-height: 1.2;" id="cp-name">Cleaner Name
+                </h3>
+                <p style="color: var(--text-muted); margin: 0.25rem 0 0 0; font-family: monospace;" id="cp-empid">CLN00X
+                </p>
+            </div>
+            <button onclick="closeCleanerProfileModal()"
+                style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Total Cleaned</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);" id="cp-total">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Avg Rating</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <span style="font-size: 1.5rem; font-weight: bold; color: #FFD700;" id="cp-rating">0.0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);" id="cp-rating-count">(0)</span>
+                </div>
+            </div>
+        </div>
+
+        <h4 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Recent History
+        </h4>
+        <div id="cp-history" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- History Items -->
+            <p class="text-muted text-center" style="padding: 1rem;">Loading history...</p>
+        </div>
+    </div>
+
     <!-- Add Cleaner Modal -->
     <div id="add-cleaner-modal" class="auth-card"
         style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 100px rgba(0,0,0,0.5); width: 90%; max-width: 400px;">
@@ -229,6 +265,78 @@
         function closeAddCleanerModal() {
             modal.style.display = 'none';
             form.reset();
+        }
+
+        const profileModal = document.getElementById('cleaner-profile-modal');
+
+        function closeCleanerProfileModal() {
+            profileModal.style.display = 'none';
+        }
+
+        async function openCleanerProfile(id) {
+            profileModal.style.display = 'block';
+
+            // clear previous data
+            document.getElementById('cp-name').textContent = 'Loading...';
+            document.getElementById('cp-empid').textContent = '...';
+            document.getElementById('cp-total').textContent = '-';
+            document.getElementById('cp-rating').textContent = '-';
+            document.getElementById('cp-history').innerHTML = '<p class="text-muted text-center" style="padding: 1rem;">Loading history...</p>';
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch(`${API_URL}/admin/cleaners/${id}/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('cp-name').textContent = data.cleaner.name;
+                    document.getElementById('cp-empid').textContent = data.cleaner.employeeId;
+                    document.getElementById('cp-total').textContent = data.stats.totalCleaned;
+                    document.getElementById('cp-rating').textContent = data.stats.avgRating;
+                    document.getElementById('cp-rating-count').textContent = `(${data.stats.ratingCount})`;
+
+                    const historyContainer = document.getElementById('cp-history');
+                    historyContainer.innerHTML = '';
+
+                    if (data.history.length === 0) {
+                        historyContainer.innerHTML = '<p class="text-muted text-center" style="padding: 1rem;">No recent history.</p>';
+                    } else {
+                        data.history.forEach(h => {
+                            const date = new Date(h.date).toLocaleDateString();
+                            const stars = h.rating ? '⭐'.repeat(h.rating) : '<span class="text-muted" style="font-size:0.8rem">Not Rated</span>';
+
+                            const div = document.createElement('div');
+                            div.style.background = 'rgba(255,255,255,0.03)';
+                            div.style.padding = '0.75rem';
+                            div.style.borderRadius = '8px';
+                            div.style.display = 'flex';
+                            div.style.justifyContent = 'space-between';
+                            div.style.alignItems = 'center';
+
+                            div.innerHTML = `
+                                <div>
+                                    <div style="font-weight:bold; font-size:0.9rem;">${h.type}</div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">${h.student} (Room ${h.room})</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div>${stars}</div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);">${date}</div>
+                                </div>
+                            `;
+                            historyContainer.appendChild(div);
+                        });
+                    }
+                } else {
+                    showToast('Failed to load details', 'error');
+                    closeCleanerProfileModal();
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Connection error', 'error');
+                closeCleanerProfileModal();
+            }
         }
 
         async function fetchStats() {
@@ -348,6 +456,8 @@
                     const card = document.createElement('div');
                     card.className = 'request-card'; // Reuse style
                     card.style.animationDelay = `${index * 0.1}s`;
+                    card.style.cursor = 'pointer'; // Make clickable
+                    card.onclick = () => openCleanerProfile(c.id);
 
                     const statusColor = c.is_active ? 'var(--success)' : 'var(--error)';
 

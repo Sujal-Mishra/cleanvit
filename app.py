@@ -669,6 +669,57 @@ def add_cleaner():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/admin/cleaners/<int:id>/stats', methods=['GET'])
+@token_required
+def get_cleaner_stats(id):
+    if not supabase: return jsonify({'error': 'Database not configured'}), 500
+    if g.current_user['role'] != 'admin': return jsonify({'error': 'Unauthorized'}), 403
+    
+    # 1. Get Cleaner Details
+    cleaner_res = supabase.table('cleaners').select('*').eq('id', id).execute()
+    if not cleaner_res.data:
+        return jsonify({'error': 'Cleaner not found'}), 404
+    cleaner = cleaner_res.data[0]
+    
+    # 2. Get Completed Requests Count
+    completed_res = supabase.table('requests').select('*', count='exact', head=True).eq('cleaner_id', id).eq('status', 'completed').execute()
+    total_cleaned = completed_res.count
+    
+    # 3. Calculate Average Rating
+    # Fetch ratings (not null)
+    ratings_res = supabase.table('requests').select('rating').eq('cleaner_id', id).not_.is_('rating', 'null').execute()
+    ratings = [r['rating'] for r in ratings_res.data]
+    avg_rating = sum(ratings) / len(ratings) if ratings else 0
+    
+    # 4. Recent History (Last 5 jobs) with student names
+    # Note: Supabase-py join syntax: select('*, users(name)')
+    history_res = supabase.table('requests').select('id, type, completed_at, rating, users(name, room_number)').eq('cleaner_id', id).eq('status', 'completed').order('completed_at', desc=True).limit(5).execute()
+    
+    history = []
+    for h in history_res.data:
+        history.append({
+            'id': h['id'],
+            'type': h['type'],
+            'date': h['completed_at'],
+            'rating': h['rating'],
+            'student': h['users']['name'] if h.get('users') else 'Unknown',
+            'room': h['users']['room_number'] if h.get('users') else 'Unknown',
+        })
+        
+    return jsonify({
+        'cleaner': {
+            'name': cleaner['name'],
+            'employeeId': cleaner['employee_id'],
+            'blocks': json.loads(cleaner['assigned_blocks']) if cleaner.get('assigned_blocks') else []
+        },
+        'stats': {
+            'totalCleaned': total_cleaned,
+            'avgRating': round(avg_rating, 1),
+            'ratingCount': len(ratings)
+        },
+        'history': history
+    })
+
 # Try imports for QR decoding
 HAS_CV2 = False
 HAS_PYZBAR = False
