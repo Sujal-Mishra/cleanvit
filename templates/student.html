@@ -7,6 +7,7 @@
     <title>Clean VIT - Student Portal</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -16,50 +17,55 @@
             <div class="auth-header">
                 <a href="/" class="auth-back">← Back to Home</a>
                 <h1 class="auth-title">Student Login</h1>
-                <p class="auth-subtitle">Enter your credentials to access the portal</p>
+                <p class="auth-subtitle">Access your room dashboard</p>
             </div>
 
-            <form id="login-form">
-                <div class="form-group">
-                    <label class="form-label">Email Address</label>
-                    <input type="email" class="form-input" id="email" placeholder="student@vitstudent.ac.in" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="password" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-            </form>
+            <!-- Login / Sign In with Google -->
+            <div id="login-view">
+                <button onclick="signInWithGoogle()" class="btn btn-primary btn-block"
+                    style="background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
+                    Sign in with VIT Email
+                </button>
+                <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Only @vitstudent.ac.in emails allowed
+                </p>
+            </div>
 
-            <form id="signup-form" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" class="form-input" id="su-name" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">VIT Email</label>
-                    <input type="email" class="form-input" id="su-email" placeholder="@vitstudent.ac.in" required>
-                </div>
-                <div class="form-row">
+            <!-- Profile Completion Form (Hidden by default) -->
+            <div id="profile-form-view" style="display: none;">
+                <h3 style="margin-bottom: 1rem;">Complete Profile</h3>
+                <p style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">Please provide your room
+                    details</p>
+
+                <form id="complete-profile-form">
                     <div class="form-group">
-                        <label class="form-label">Block</label>
-                        <input type="text" class="form-input" id="su-block" placeholder="Q" required>
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="pf-name" disabled required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Room No</label>
-                        <input type="text" class="form-input" id="su-room" placeholder="101" required>
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="pf-email" disabled required>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="su-password" required>
-                </div>
-                <button type="button" class="btn btn-primary btn-block" onclick="signup()">Create Account (No
-                    OTP)</button>
-            </form>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Block</label>
+                            <input type="text" class="form-input" id="pf-block" placeholder="Q" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Room No</label>
+                            <input type="text" class="form-input" id="pf-room" placeholder="101" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">All Set!</button>
+                </form>
+            </div>
 
-            <div class="auth-footer" id="auth-footer">
-                Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>
+            <div id="loading-view" style="display: none; text-align: center;">
+                <div class="spinner"
+                    style="border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin: 0 auto;">
+                </div>
+                <p style="margin-top: 1rem;">Verifying...</p>
             </div>
         </div>
     </div>
@@ -171,6 +177,134 @@
     <script>
         lucide.createIcons();
         const API_URL = '/api';
+
+        // Supabase Initialization
+        // Use Flask Jinja variables if available, otherwise fetch from config (for static file compatibility)
+        let _supabase = null;
+
+        async function initSupabase() {
+            let sbUrl = "{{ supabase_url }}";
+            let sbKey = "{{ supabase_key }}";
+
+            // If template vars not rendered (static file), fetch from API
+            if (sbUrl.includes("{{")) {
+                try {
+                    const res = await fetch('/api/config');
+                    const config = await res.json();
+                    sbUrl = config.supabaseUrl;
+                    sbKey = config.supabaseKey;
+                } catch (e) {
+                    console.error("Failed to fetch config", e);
+                    return;
+                }
+            }
+
+            if (sbUrl && sbKey) {
+                _supabase = supabase.createClient(sbUrl, sbKey);
+
+                // Check auth state
+                _supabase.auth.onAuthStateChange((event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
+                        handleGoogleLogin(session.user);
+                    }
+                });
+            }
+        }
+
+        initSupabase();
+
+        async function signInWithGoogle() {
+            if (!_supabase) return showToast("Supabase not initialized", "error");
+
+            const { data, error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: {
+                        hd: 'vitstudent.ac.in', // Host domain restriction hint
+                        prompt: 'select_account'
+                    },
+                    redirectTo: window.location.origin + '/student'
+                }
+            });
+
+            if (error) showToast(error.message, "error");
+        }
+
+        async function handleGoogleLogin(user) {
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('loading-view').style.display = 'block';
+
+            if (!user.email.endsWith('@vitstudent.ac.in')) {
+                await _supabase.auth.signOut();
+                showToast("Only @vitstudent.ac.in emails allowed", "error");
+                resetAuthView();
+                return;
+            }
+
+            // Check if user exists in our DB
+            try {
+                const res = await fetch(`${API_URL}/auth/student/google-check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // Logic success
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
+                } else if (data.status === 'profile_required') {
+                    // Show profile form
+                    document.getElementById('loading-view').style.display = 'none';
+                    document.getElementById('profile-form-view').style.display = 'block';
+                    document.getElementById('pf-email').value = user.email;
+                    document.getElementById('pf-name').value = user.user_metadata.full_name || user.email.split('@')[0];
+                } else {
+                    showToast(data.error || "Login failed", "error");
+                    resetAuthView();
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Server connection failed", "error");
+                resetAuthView();
+            }
+        }
+
+        document.getElementById('complete-profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('pf-email').value;
+            const name = document.getElementById('pf-name').value;
+            const block = document.getElementById('pf-block').value;
+            const roomNumber = document.getElementById('pf-room').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/student/google-register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, block, roomNumber })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showToast('Registration complete!', 'success');
+                    setTimeout(initDashboard, 500);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (e) {
+                showToast("Registration failed", "error");
+            }
+        });
+
+        function resetAuthView() {
+            document.getElementById('loading-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'block';
+        }
 
         // Toast Notification System
         function showToast(message, type = 'info') {
@@ -364,99 +498,14 @@
             });
         }
 
-        async function login(e) {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const res = await fetch(`${API_URL}/auth/student/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    showToast('Login successful', 'success');
-                    setTimeout(initDashboard, 500);
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Login failed', 'error');
-            }
-        }
-
-        document.getElementById('login-form').addEventListener('submit', login);
-
-        function toggleAuth(mode) {
-            const loginForm = document.getElementById('login-form');
-            const signupForm = document.getElementById('signup-form');
-            const footer = document.getElementById('auth-footer');
-            const title = document.querySelector('.auth-title');
-
-            if (mode === 'signup') {
-                loginForm.style.display = 'none';
-                signupForm.style.display = 'block';
-                title.textContent = 'Student Registration';
-                footer.innerHTML = `Already have an account? <a href="#" onclick="toggleAuth('login')">Sign In</a>`;
-            } else {
-                signupForm.style.display = 'none';
-                loginForm.style.display = 'block';
-                title.textContent = 'Student Login';
-                footer.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>`;
-            }
-        }
-
-        async function signup() {
-            // Updated to direct signup
-            const email = document.getElementById('su-email').value;
-            const password = document.getElementById('su-password').value;
-            const name = document.getElementById('su-name').value;
-            const block = document.getElementById('su-block').value;
-            const roomNumber = document.getElementById('su-room').value;
-
-            if (!email.endsWith('@vitstudent.ac.in')) {
-                showToast('Please use VIT email (@vitstudent.ac.in)', 'warning');
-                return;
-            }
-
-            try {
-                // Modified to call a new direct signup endpoint or reuse verify logic adapted for direct signup
-                // Since we are removing OTP, we'll hit a new endpoint or modified one. 
-                // Let's assume we change backend to accept everything at once.
-                // For now, I will modify the fetch to point to a new hypothetical endpoint /api/auth/student/register
-                // But I also need to update the backend. Let's send to /api/auth/student/signup-direct
-
-                const res = await fetch(`${API_URL}/auth/student/signup-direct`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, name, block, roomNumber })
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    showToast('Account created! Please login.', 'success');
-                    toggleAuth('login');
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch (e) {
-                showToast('Signup failed', 'error');
-            }
-        }
-
-        // verifyOtp function removed
-
         function initDashboard() {
             const token = localStorage.getItem('token');
             if (!token) return;
 
-            const user = JSON.parse(localStorage.getItem('user'));
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return;
+
+            const user = JSON.parse(userStr);
             document.getElementById('user-name').textContent = user.name;
             document.getElementById('user-block-room').textContent = `${user.block} Block - ${user.roomNumber}`;
 
@@ -490,6 +539,7 @@
         }
 
         function logout() {
+            if (_supabase) _supabase.auth.signOut();
             localStorage.clear();
             location.reload();
         }
@@ -498,6 +548,17 @@
             initDashboard();
         }
     </script>
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </body>
 
 </html>

@@ -85,7 +85,7 @@ def index():
 
 @app.route('/student')
 def student_page():
-    return render_template('student.html')
+    return render_template('student.html', supabase_url=SUPABASE_URL, supabase_key=SUPABASE_KEY)
 
 @app.route('/cleaner')
 def cleaner_page():
@@ -203,6 +203,117 @@ def student_verify_signup():
         supabase.table('otps').update({'used': True}).eq('id', otp_record['id']).execute()
         
         return jsonify({'message': 'Account created successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/config')
+def get_config():
+    return jsonify({
+        'supabaseUrl': SUPABASE_URL,
+        'supabaseKey': SUPABASE_KEY
+    })
+
+@app.route('/api/auth/student/google-check', methods=['POST'])
+def google_check():
+    if not supabase: return jsonify({'error': 'Database not configured'}), 500
+    
+    data = request.json
+    email = data.get('email')
+    
+    if not email or not email.endswith('@vitstudent.ac.in'):
+        return jsonify({'error': 'Please use a valid VIT email address'}), 400
+
+    # Check if user exists in our local users table
+    res = supabase.table('users').select('*').eq('email', email).execute()
+    
+    if not res.data:
+        # User auth'd with Google but not in our DB -> Needs profile
+        return jsonify({'status': 'profile_required'})
+    
+    user = res.data[0]
+    
+    # User exists, generate token
+    token = jwt.encode({
+        'id': user['id'],
+        'email': user['email'],
+        'role': 'student',
+        'block': user['block'],
+        'roomNumber': user['room_number'],
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }, app.secret_key, algorithm="HS256")
+    
+    return jsonify({
+        'status': 'success',
+        'token': token,
+        'user': {
+            'id': user['id'], 
+            'email': user['email'], 
+            'name': user['name'],
+            'block': user['block'], 
+            'roomNumber': user['room_number']
+        }
+    })
+
+@app.route('/api/auth/student/google-register', methods=['POST'])
+def google_register():
+    if not supabase: return jsonify({'error': 'Database not configured'}), 500
+    
+    data = request.json
+    email = data.get('email')
+    name = data.get('name')
+    block = data.get('block')
+    room_number = data.get('roomNumber')
+    
+    if not email or not email.endswith('@vitstudent.ac.in'):
+        return jsonify({'error': 'Please use a valid VIT email address'}), 400
+        
+    group_no = f"{block}-{room_number}"
+    
+    try:
+        # Create User - password is None/Empty for Google users if we want, or a dummy one
+        dummy_pass = str(uuid.uuid4())
+        hashed = hash_password(dummy_pass)
+        
+        user_res = supabase.table('users').insert({
+            'email': email,
+            'password': hashed, 
+            'name': name,
+            'block': block,
+            'room_number': room_number,
+            'group_no': group_no,
+            'role': 'student'
+        }).execute()
+        
+        # Now login
+        try:
+             # Depending on supabase-py version, insert might return data or we query it
+            res = supabase.table('users').select('*').eq('email', email).execute()
+            user = res.data[0]
+        except:
+             # Fallback if insert returns data directly (it should)
+             user = user_res.data[0]
+
+        token = jwt.encode({
+            'id': user['id'],
+            'email': user['email'],
+            'role': 'student',
+            'block': user['block'],
+            'roomNumber': user['room_number'],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        }, app.secret_key, algorithm="HS256")
+        
+        return jsonify({
+            'status': 'success',
+            'token': token,
+            'user': {
+                'id': user['id'], 
+                'email': user['email'], 
+                'name': user['name'],
+                'block': user['block'], 
+                'roomNumber': user['room_number']
+            }
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
