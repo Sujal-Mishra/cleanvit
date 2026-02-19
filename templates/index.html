@@ -6,57 +6,299 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clean VIT - Room Cleaning Management</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .hero-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .portal-cards-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .landing-card {
+            background: rgba(30, 30, 47, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .landing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 107, 0, 0.3);
+            background: rgba(40, 40, 60, 0.8);
+        }
+
+        .landing-card:hover::before {
+            opacity: 1;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .landing-card:hover .icon-circle {
+            background: linear-gradient(135deg, rgba(255, 107, 0, 0.2) 0%, rgba(255, 61, 0, 0.2) 100%);
+            transform: scale(1.1) rotate(5deg);
+            border-color: rgba(255, 107, 0, 0.3);
+            color: white;
+        }
+
+        .role-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: white;
+        }
+
+        .role-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .btn-landing {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-student {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+        }
+
+        .btn-student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 0, 0.5);
+        }
+
+        .btn-cleaner {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-cleaner:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .admin-link-container {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            z-index: 20;
+        }
+
+        .admin-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-link:hover {
+            color: white;
+            border-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Bg Orbs Override */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.15;
+            animation: float 20s infinite;
+        }
+
+        .orb-1 {
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: #FFD700;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            top: 40%;
+            left: 40%;
+            width: 300px;
+            height: 300px;
+            background: #FF1744;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            33% {
+                transform: translate(30px, -50px);
+            }
+
+            66% {
+                transform: translate(-20px, 20px);
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Admin Quick Access -->
+    <div class="admin-link-container">
+        <a href="/admin" class="admin-link">
+            <i data-lucide="shield"></i> Admin Login
+        </a>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
     <div class="startup-container">
-        <!-- Animated Background Orbs -->
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-
-        <!-- Logo Section -->
-        <div class="logo-container">
-            <div class="logo">
-                <div class="logo-icon">🧹</div>
-            </div>
-            <h1 class="logo-text">Clean VIT</h1>
-            <p class="tagline">VIT Vellore Room Cleaning Management System</p>
-        </div>
-
-        <!-- Portal Selection -->
-        <div class="portals-grid">
-            <!-- Student Portal -->
-            <div class="portal-card student" onclick="navigateTo('student')">
-                <div class="portal-icon">🎓</div>
-                <h2 class="portal-title">Student Portal</h2>
-                <p class="portal-desc">Generate cleaning requests, view history, and rate services</p>
+        <div class="main-container">
+            <div class="hero-section">
+                <div style="font-size: 4rem; margin-bottom: 1rem; text-shadow: 0 10px 30px rgba(0,0,0,0.5);">🧹</div>
+                <h1
+                    style="font-size: 3.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; background: linear-gradient(to right, #ffffff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Clean VIT</h1>
+                <p
+                    style="font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                    The standard for campus hygiene. <br>
+                    Request cleaning services instantly and track them in real-time.
+                </p>
             </div>
 
-            <!-- Cleaner Portal -->
-            <div class="portal-card cleaner" onclick="navigateTo('cleaner')">
-                <div class="portal-icon">👷</div>
-                <h2 class="portal-title">Cleaner Portal</h2>
-                <p class="portal-desc">Accept requests, manage jobs, and scan QR codes</p>
-            </div>
-        </div>
+            <div class="portal-cards-wrapper">
+                <!-- Student Portal -->
+                <div class="landing-card">
+                    <div class="icon-circle">🎓</div>
+                    <h2 class="role-title">Student Portal</h2>
+                    <p class="role-desc">
+                        Schedule room cleaning, request deep cleaning services, view history, and rate your experience.
+                    </p>
+                    <a href="/student" class="btn-landing btn-student">
+                        Login as Student <i data-lucide="arrow-right" style="width: 16px;"></i>
+                    </a>
+                </div>
 
-        <!-- Admin Quick Access -->
-        <div style="margin-top: 3rem; text-align: center;">
-            <a href="/admin" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">
-                Admin Login →
-            </a>
+                <!-- Cleaner Portal -->
+                <div class="landing-card">
+                    <div class="icon-circle">👷</div>
+                    <h2 class="role-title">Cleaner Portal</h2>
+                    <p class="role-desc">
+                        Manage your assigned blocks, view pending requests, and complete jobs.
+                    </p>
+                    <a href="/cleaner" class="btn-landing btn-cleaner">
+                        Login as Cleaner <i data-lucide="arrow-right" style="width: 16px;"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 4rem; opacity: 0.6; font-size: 0.8rem;">
+                <p>&copy; 2024 VIT Vellore • Campus Maintenance Division</p>
+            </div>
         </div>
     </div>
 
     <script>
-        function navigateTo(portal) {
-            if (portal === 'student') {
-                window.location.href = '/student';
-            } else if (portal === 'cleaner') {
-                window.location.href = '/cleaner';
-            }
-        }
+        lucide.createIcons();
     </script>
 </body>
 
