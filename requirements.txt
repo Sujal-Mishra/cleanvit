@@ -7,3 +7,6 @@ pyjwt
 qrcode
 pillow
 gunicorn
+opencv-python-headless
+numpy
+pyzbar
