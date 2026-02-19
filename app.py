@@ -669,18 +669,6 @@ def add_cleaner():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-if __name__ == '__main__':
-    if not SUPABASE_URL:
-        print("""
-        ========================= IMPROTANT =========================
-        Supabase URL/Key missing! 
-        Please create a .env file with:
-        SUPABASE_URL=...
-        SUPABASE_KEY=...
-        =============================================================
-        """)
-    app.run(debug=True, port=5000)
-
 # Try imports for QR decoding
 try:
     import cv2
@@ -749,3 +737,15 @@ def complete_job_scan(id):
     except Exception as e:
         print(f"QR Scan Error: {e}")
         return jsonify({'error': f'Failed to process image: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    if not SUPABASE_URL:
+        print("""
+        ========================= IMPROTANT =========================
+        Supabase URL/Key missing! 
+        Please create a .env file with:
+        SUPABASE_URL=...
+        SUPABASE_KEY=...
+        =============================================================
+        """)
+    app.run(debug=True, port=5000)
