@@ -1,670 +1,503 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Clean VIT</title>
+    <title>Clean VIT - Student Portal</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
 
+<body>
     <!-- Auth Section -->
-    <div class="auth-container" id="authSection">
+    <div id="auth-section" class="auth-container">
         <div class="auth-card">
-            <!-- Login Form -->
-            <div id="loginForm">
-                <div class="auth-header">
-                    <a class="auth-back" href="/">← Back to Home</a>
-                    <h1 class="auth-title">Welcome Back</h1>
-                    <p class="auth-subtitle">Login to your student account</p>
-                </div>
-                
-                <form onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label class="form-label">VIT Email</label>
-                        <input type="email" class="form-input" id="loginEmail" placeholder="yourname@vitstudent.ac.in" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
-                        Login
-                    </button>
-                </form>
-                
-                <div class="auth-footer">
-                    Don't have an account? <a href="#" onclick="showSignup()">Sign up</a>
-                </div>
+            <div class="auth-header">
+                <a href="/" class="auth-back">← Back to Home</a>
+                <h1 class="auth-title">Student Login</h1>
+                <p class="auth-subtitle">Enter your credentials to access the portal</p>
             </div>
 
-            <!-- Signup Form -->
-            <div id="signupForm" class="hidden">
-                <div class="auth-header">
-                    <a class="auth-back" onclick="showLogin()">← Back to Login</a>
-                    <h1 class="auth-title">Create Account</h1>
-                    <p class="auth-subtitle">Register with your VIT email</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="email" placeholder="student@vitstudent.ac.in" required>
                 </div>
-                
-                <!-- Step 1: Email -->
-                <div id="signupStep1">
-                    <form onsubmit="handleSignupStep1(event)">
-                        <div class="form-group">
-                            <label class="form-label">VIT Email</label>
-                            <input type="email" class="form-input" id="signupEmail" placeholder="yourname@vitstudent.ac.in" required>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-block" id="sendOtpBtn">
-                            Send OTP
-                        </button>
-                    </form>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" placeholder="••••••••" required>
                 </div>
-                
-                <!-- Step 2: OTP Verification -->
-                <div id="signupStep2" class="otp-section">
-                    <div class="otp-display">
-                        <p class="otp-note">Your OTP (for demo)</p>
-                        <div class="otp-code" id="otpDisplay">------</div>
-                        <p class="otp-note">Enter the OTP sent to your email</p>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+
+            <form id="signup-form" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="su-name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">VIT Email</label>
+                    <input type="email" class="form-input" id="su-email" placeholder="@vitstudent.ac.in" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Block</label>
+                        <input type="text" class="form-input" id="su-block" placeholder="Q" required>
                     </div>
-                    
-                    <form onsubmit="handleSignupStep2(event)">
-                        <div class="form-group">
-                            <label class="form-label">Enter OTP</label>
-                            <input type="text" class="form-input" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" required>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-block">
-                            Verify OTP
-                        </button>
-                    </form>
+                    <div class="form-group">
+                        <label class="form-label">Room No</label>
+                        <input type="text" class="form-input" id="su-room" placeholder="101" required>
+                    </div>
                 </div>
-                
-                <!-- Step 3: Complete Registration -->
-                <div id="signupStep3" class="otp-section">
-                    <form onsubmit="handleSignupStep3(event)">
-                        <div class="form-group">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" class="form-input" id="signupName" placeholder="Enter your full name" required>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Block</label>
-                                <select class="form-select" id="signupBlock" required>
-                                    <option value="">Select Block</option>
-                                    <option value="A1">A1 Block</option>
-                                    <option value="A2">A2 Block</option>
-                                    <option value="A3">A3 Block</option>
-                                    <option value="A4">A4 Block</option>
-                                    <option value="A5">A5 Block</option>
-                                    <option value="B1">B1 Block</option>
-                                    <option value="B2">B2 Block</option>
-                                    <option value="B3">B3 Block</option>
-                                    <option value="B4">B4 Block</option>
-                                    <option value="B5">B5 Block</option>
-                                    <option value="C1">C1 Block</option>
-                                    <option value="C2">C2 Block</option>
-                                    <option value="C3">C3 Block</option>
-                                    <option value="C4">C4 Block</option>
-                                    <option value="C5">C5 Block</option>
-                                    <option value="D1">D1 Block</option>
-                                    <option value="D2">D2 Block</option>
-                                    <option value="D3">D3 Block</option>
-                                    <option value="D4">D4 Block</option>
-                                    <option value="D5">D5 Block</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Room Number</label>
-                                <input type="text" class="form-input" id="signupRoom" placeholder="e.g., 101" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Password</label>
-                            <input type="password" class="form-input" id="signupPassword" placeholder="Create a password" required>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-block">
-                            Create Account
-                        </button>
-                    </form>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="su-password" required>
                 </div>
-                
-                <div class="auth-footer">
-                    Already have an account? <a href="#" onclick="showLogin()">Login</a>
-                </div>
+                <button type="button" class="btn btn-primary btn-block" onclick="signup()">Create Account (No
+                    OTP)</button>
+            </form>
+
+            <div class="auth-footer" id="auth-footer">
+                Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>
             </div>
         </div>
     </div>
 
     <!-- Dashboard Section -->
-    <div class="dashboard hidden" id="dashboardSection">
-        <!-- Sidebar -->
+    <div id="dashboard-section" class="dashboard" style="display: none;">
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <div class="sidebar-logo-icon">🧹</div>
-                <span class="sidebar-logo-text">Clean VIT</span>
+                <div class="sidebar-logo-icon">🎓</div>
+                <div class="sidebar-logo-text">Student Portal</div>
             </div>
-            
+
             <nav class="sidebar-nav">
-                <a class="nav-item active" onclick="showPage('generate')">
-                    <span class="nav-icon">✨</span>
-                    Generate Request
+                <a href="#" class="nav-item active" onclick="showDashboard('overview', this)">
+                    <div class="nav-icon"><i data-lucide="layout-dashboard"></i></div>
+                    Overview
                 </a>
-                <a class="nav-item" onclick="showPage('history')">
-                    <span class="nav-icon">📋</span>
+                <a href="#" class="nav-item" onclick="showDashboard('history', this)">
+                    <div class="nav-icon"><i data-lucide="clock"></i></div>
                     History
                 </a>
+                <a href="#" class="nav-item" onclick="showDashboard('roommates', this)">
+                    <div class="nav-icon"><i data-lucide="users"></i></div>
+                    Roommates
+                </a>
             </nav>
-            
+
             <div class="sidebar-user">
                 <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">S</div>
+                    <div class="user-avatar">S</div>
                     <div class="user-details">
-                        <div class="user-name" id="userName">Student</div>
+                        <div class="user-name" id="user-name">Student Name</div>
                         <div class="user-role">Student</div>
                     </div>
                 </div>
-                <div class="user-block" id="userBlockInfo">Block: --</div>
-                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+                <div class="user-block" id="user-block-room">Block - Room</div>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Generate Request Page -->
-            <div id="generatePage">
-                <div class="page-header">
-                    <h1 class="page-title">Generate Cleaning Request</h1>
-                    <p class="page-subtitle">Create a new cleaning request for your room</p>
-                </div>
+            <!-- Overview Section -->
+            <div id="view-overview">
+                <header class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Manage your room cleaning requests</p>
+                </header>
 
-                <div class="form-section">
-                    <h3 class="form-section-title">📝 Request Details</h3>
-                    
-                    <form onsubmit="handleCreateRequest(event)">
+                <!-- Request Form Card -->
+                <div class="card mb-4" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">New Request</h3>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Cleaning Type</label>
-                            <select class="form-select" id="requestType" required>
-                                <option value="">Select cleaning type</option>
-                                <option value="Daily">Daily Cleaning</option>
-                                <option value="Deep Clean">Deep Cleaning</option>
-                                <option value="Emergency">Emergency Cleaning</option>
+                            <label class="form-label">Request Type</label>
+                            <select class="form-select" id="req-type">
+                                <option value="Normal Cleaning">Normal Cleaning (Brooming + Mopping)</option>
+                                <option value="Deep Cleaning">Deep Cleaning</option>
+                                <option value="Washroom Cleaning">Washroom Cleaning</option>
                             </select>
                         </div>
-                        
                         <div class="form-group">
-                            <label class="form-label">Special Instructions (Optional)</label>
-                            <textarea class="form-input" id="requestInstructions" rows="3" placeholder="Any specific requirements or areas to focus on..."></textarea>
+                            <label class="form-label">Instructions (Optional)</label>
+                            <input type="text" class="form-input" id="req-instructions"
+                                placeholder="e.g. Please come after 2 PM">
                         </div>
-                        
-                        <button type="submit" class="btn btn-primary" id="createReqBtn">
-                            Generate Request
-                        </button>
-                    </form>
+                    </div>
+                    <button class="btn btn-primary" onclick="createRequest()">
+                        <i data-lucide="sparkles"></i> Request Cleaning
+                    </button>
                 </div>
 
-                <!-- QR Code Display (shown after request) -->
-                <div class="card hidden" id="qrCard">
-                    <div class="card-header">
-                        <h3 class="card-title">QR Code Generated</h3>
-                    </div>
-                    <div class="qr-section">
-                        <img src="" alt="QR Code" class="qr-code" id="qrCodeImage">
-                        <p class="qr-instruction">Show this QR code to the cleaner after they complete the cleaning</p>
-                        <p class="text-muted mt-2" id="qrRequestId"></p>
-                    </div>
+                <!-- Active Requests -->
+                <h3 class="page-title" style="font-size: 1.25rem;">Active Requests</h3>
+                <div class="requests-grid" id="active-requests" style="margin-top: 1rem;">
+                    <!-- JS will populate this -->
                 </div>
             </div>
 
-            <!-- History Page -->
-            <div id="historyPage" class="hidden">
-                <div class="page-header">
+            <!-- History Section -->
+            <div id="view-history" style="display: none;">
+                <header class="page-header">
                     <h1 class="page-title">Request History</h1>
-                    <p class="page-subtitle">View all your cleaning requests</p>
-                </div>
-
-                <div class="filter-row">
-                    <select class="filter-select" id="historyFilter" onchange="loadHistory()">
-                        <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                </div>
-
-                <div class="requests-grid" id="historyGrid">
-                    <!-- Requests will be loaded here -->
+                    <p class="page-subtitle">Past cleaning records</p>
+                </header>
+                <div class="requests-grid" id="history-requests">
+                    <!-- JS will populate -->
                 </div>
             </div>
+
+            <!-- Roommates Section -->
+            <div id="view-roommates" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">Roommates</h1>
+                    <p class="page-subtitle">Students in your room group</p>
+                </header>
+                <div class="requests-grid" id="roommates-grid">
+                    <!-- JS will populate -->
+                </div>
+            </div>
+
         </main>
     </div>
 
-    <!-- Rating Modal -->
-    <div class="modal-overlay" id="ratingModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Rate the Service</h3>
-                <button class="modal-close" onclick="closeRatingModal()">×</button>
-            </div>
-            <div style="text-align: center;">
-                <p class="text-muted mb-2">How was the cleaning service?</p>
-                <div class="rating-stars" id="ratingStars">
-                    <span class="star" data-rating="1">★</span>
-                    <span class="star" data-rating="2">★</span>
-                    <span class="star" data-rating="3">★</span>
-                    <span class="star" data-rating="4">★</span>
-                    <span class="star" data-rating="5">★</span>
-                </div>
-                <div class="form-group mt-3">
-                    <label class="form-label">Feedback (Optional)</label>
-                    <textarea class="form-input" id="feedbackInput" rows="2" placeholder="Any feedback for the cleaner..."></textarea>
-                </div>
-                <button class="btn btn-primary btn-block mt-2" onclick="submitRating()">Submit Rating</button>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <script>
-        // Global state
-        let currentUser = null;
-        let selectedRating = 0;
-        let currentRequestId = null;
+        lucide.createIcons();
+        const API_URL = '/api';
 
-        // Check auth on load
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('studentToken');
-            const user = localStorage.getItem('studentUser');
-            
-            if (token && user) {
-                currentUser = JSON.parse(user);
-                showDashboard();
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'alert-circle';
+            if (type === 'warning') icon = 'alert-triangle';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function showDashboard(view, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            // Simple transition fade
+            const mainContent = document.querySelector('.main-content');
+            mainContent.style.opacity = '0';
+
+            setTimeout(() => {
+                document.getElementById('view-overview').style.display = 'none';
+                document.getElementById('view-history').style.display = 'none';
+                document.getElementById('view-roommates').style.display = 'none';
+
+                if (view === 'overview') {
+                    document.getElementById('view-overview').style.display = 'block';
+                } else if (view === 'history') {
+                    document.getElementById('view-history').style.display = 'block';
+                    fetchRequests();
+                } else if (view === 'roommates') {
+                    document.getElementById('view-roommates').style.display = 'block';
+                    fetchRoommates();
+                }
+                mainContent.style.opacity = '1';
+            }, 200);
+        }
+
+        async function fetchRequests() {
+            // console.log("Fetching requests...");
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
+
+            const activeGrid = document.getElementById('active-requests');
+            const historyGrid = document.getElementById('history-requests');
+            if (activeGrid) activeGrid.innerHTML = '';
+            if (historyGrid) historyGrid.innerHTML = '';
+
+            reqs.forEach((req, index) => {
+                const createdDate = new Date(req.created_at).toLocaleString();
+                const completedDate = req.completed_at ? new Date(req.completed_at).toLocaleString() : '-';
+
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`; // Staggered animation
+
+                let statusBadge = `<span class="request-status status-${req.status.toLowerCase()}">${req.status}</span>`;
+
+                if (['pending', 'in_progress', 'accepted'].includes(req.status)) {
+                    if (!activeGrid) return;
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">#${req.id}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="card-title">${req.type}</div>
+                        <p class="portal-desc">${req.instructions || 'No special instructions'}</p>
+                        <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;"><i data-lucide="calendar" style="width:14px; display:inline; vertical-align:middle"></i> ${createdDate}</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.9); border-radius: 8px; text-align: center;">
+                            <img src="${req.qr_code}" alt="QR Code" width="100" style="display: block; margin: 0 auto; mix-blend-mode: multiply;">
+                            <p style="font-size: 0.8rem; color: #333; margin-top: 5px; font-weight:600;">Scan to complete</p>
+                        </div>
+                    `;
+                    activeGrid.appendChild(card);
+                } else {
+                    if (!historyGrid) return;
+                    let ratingHtml = '';
+                    if (req.status === 'completed') {
+                        if (req.rating) {
+                            ratingHtml = `<div class="text-warning mt-2">Rated: ${'★'.repeat(req.rating)}${'☆'.repeat(5 - req.rating)}</div>`;
+                        } else {
+                            ratingHtml = `
+                                <button class="btn btn-sm btn-primary mt-3" onclick="openRating('${req.id}')">Rate Service</button>
+                            `;
+                        }
+                    }
+
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">#${req.id}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="card-title">${req.type}</div>
+                        <p class="portal-desc">${req.instructions || ''}</p>
+                        <div class="text-xs text-muted mt-2" style="display:grid; gap:4px;">
+                             <div><i data-lucide="clock" style="width:12px"></i> Created: ${createdDate}</div>
+                             <div><i data-lucide="check-circle" style="width:12px"></i> Completed: ${completedDate}</div>
+                        </div>
+                        ${ratingHtml}
+                    `;
+                    historyGrid.appendChild(card);
+                }
+            });
+
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No active requests.</div>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No history found.</div>';
+
+            lucide.createIcons();
+        }
+
+        async function openRating(id) {
+            const rating = prompt("Rate 1-5 stars:");
+            if (rating && rating >= 1 && rating <= 5) {
+                const feedback = prompt("Any feedback? (Optional)");
+                const token = localStorage.getItem('token');
+
+                const res = await fetch(`${API_URL}/requests/${id}/rate`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ rating: parseInt(rating), feedback })
+                });
+
+                if (res.ok) {
+                    showToast("Thank you for your feedback!", "success");
+                    fetchRequests();
+                }
+            } else if (rating) {
+                showToast("Please enter a number between 1 and 5", "warning");
             }
-        });
-
-        // Auth functions
-        function showSignup() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('signupForm').classList.remove('hidden');
-            document.getElementById('signupStep1').classList.add('active');
-            resetSignupForm();
         }
 
-        function showLogin() {
-            document.getElementById('signupForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-            resetSignupForm();
+        async function fetchRoommates() {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/student/roommates`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const users = await res.json();
+
+            const grid = document.getElementById('roommates-grid');
+            grid.innerHTML = '';
+
+            if (users.length === 0) {
+                grid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No roommates found.</div>';
+                return;
+            }
+
+            users.forEach((user, index) => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.25rem;">${user.name.charAt(0)}</div>
+                        <div>
+                            <div class="card-title">${user.name}</div>
+                            <p class="portal-desc">${user.email}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function resetSignupForm() {
-            document.getElementById('signupStep1').classList.remove('hidden');
-            document.getElementById('signupStep2').classList.remove('hidden');
-            document.getElementById('signupStep3').classList.remove('hidden');
-            document.getElementById('signupStep1').classList.add('hidden');
-            document.getElementById('signupStep2').classList.add('hidden');
-            document.getElementById('signupStep3').classList.add('hidden');
-        }
-
-        async function handleLogin(e) {
+        async function login(e) {
             e.preventDefault();
-            const btn = document.getElementById('loginBtn');
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            btn.disabled = true;
-            btn.textContent = 'Logging in...';
-            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
             try {
-                const res = await fetch('/api/auth/student/login', {
+                const res = await fetch(`${API_URL}/auth/student/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                
                 const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                localStorage.setItem('studentToken', data.token);
-                localStorage.setItem('studentUser', JSON.stringify(data.user));
-                currentUser = data.user;
-                
-                showToast('Welcome back, ' + data.user.name + '!', 'success');
-                showDashboard();
-                
+
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
+                } else {
+                    showToast(data.error, 'error');
+                }
             } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Login';
+                console.error(err);
+                showToast('Login failed', 'error');
             }
         }
 
-        async function handleSignupStep1(e) {
-            e.preventDefault();
-            const btn = document.getElementById('sendOtpBtn');
-            const email = document.getElementById('signupEmail').value;
-            
-            btn.disabled = true;
-            btn.textContent = 'Sending OTP...';
-            
-            try {
-                const res = await fetch('/api/auth/student/signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                // Show OTP (in production, this would be sent via email)
-                document.getElementById('otpDisplay').textContent = data.otp || '------';
-                
-                document.getElementById('signupStep1').classList.add('hidden');
-                document.getElementById('signupStep2').classList.remove('hidden');
-                document.getElementById('signupStep2').classList.add('active');
-                
-                showToast('OTP sent to your email!', 'success');
-                
-            } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Send OTP';
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        function toggleAuth(mode) {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const footer = document.getElementById('auth-footer');
+            const title = document.querySelector('.auth-title');
+
+            if (mode === 'signup') {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                title.textContent = 'Student Registration';
+                footer.innerHTML = `Already have an account? <a href="#" onclick="toggleAuth('login')">Sign In</a>`;
+            } else {
+                signupForm.style.display = 'none';
+                loginForm.style.display = 'block';
+                title.textContent = 'Student Login';
+                footer.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a>`;
             }
         }
 
-        async function handleSignupStep2(e) {
-            e.preventDefault();
-            const otp = document.getElementById('otpInput').value;
-            const email = document.getElementById('signupEmail').value;
-            
-            if (otp.length !== 6) {
-                showToast('Please enter a valid 6-digit OTP', 'error');
+        async function signup() {
+            // Updated to direct signup
+            const email = document.getElementById('su-email').value;
+            const password = document.getElementById('su-password').value;
+            const name = document.getElementById('su-name').value;
+            const block = document.getElementById('su-block').value;
+            const roomNumber = document.getElementById('su-room').value;
+
+            if (!email.endsWith('@vitstudent.ac.in')) {
+                showToast('Please use VIT email (@vitstudent.ac.in)', 'warning');
                 return;
             }
-            
+
             try {
-                const res = await fetch('/api/auth/student/verify-otp', {
+                // Modified to call a new direct signup endpoint or reuse verify logic adapted for direct signup
+                // Since we are removing OTP, we'll hit a new endpoint or modified one. 
+                // Let's assume we change backend to accept everything at once.
+                // For now, I will modify the fetch to point to a new hypothetical endpoint /api/auth/student/register
+                // But I also need to update the backend. Let's send to /api/auth/student/signup-direct
+
+                const res = await fetch(`${API_URL}/auth/student/signup-direct`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, otp, password: '', name: '', block: '', roomNumber: '' })
+                    body: JSON.stringify({ email, password, name, block, roomNumber })
                 });
-                
-                // For demo, accept any 6-digit OTP
-                if (otp.length === 6) {
-                    document.getElementById('signupStep2').classList.add('hidden');
-                    document.getElementById('signupStep3').classList.remove('hidden');
-                    document.getElementById('signupStep3').classList.add('active');
-                } else {
-                    throw new Error(data.error || 'Invalid OTP');
-                }
-                
-            } catch (err) {
-                // For demo, accept any valid-looking OTP
-                if (otp.length === 6) {
-                    document.getElementById('signupStep2').classList.add('hidden');
-                    document.getElementById('signupStep3').classList.remove('hidden');
-                    document.getElementById('signupStep3').classList.add('active');
-                } else {
-                    showToast('Invalid OTP. Please try again.', 'error');
-                }
-            }
-        }
-
-        async function handleSignupStep3(e) {
-            e.preventDefault();
-            const email = document.getElementById('signupEmail').value;
-            const otp = document.getElementById('otpInput').value;
-            const name = document.getElementById('signupName').value;
-            const block = document.getElementById('signupBlock').value;
-            const roomNumber = document.getElementById('signupRoom').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.textContent = 'Creating Account...';
-            
-            try {
-                const res = await fetch('/api/auth/student/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, otp, password, name, block, roomNumber })
-                });
-                
                 const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                showToast('Account created successfully! Please login.', 'success');
-                showLogin();
-                
-            } catch (err) {
-                showToast(err.message || 'Account created! Please login.', 'success');
-                showLogin();
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            }
-        }
 
-        function handleLogout() {
-            localStorage.removeItem('studentToken');
-            localStorage.removeItem('studentUser');
-            currentUser = null;
-            
-            document.getElementById('dashboardSection').classList.add('hidden');
-            document.getElementById('authSection').classList.remove('hidden');
-            
-            document.getElementById('loginEmail').value = '';
-            document.getElementById('loginPassword').value = '';
-        }
-
-        // Dashboard functions
-        function showDashboard() {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboardSection').classList.remove('hidden');
-            
-            document.getElementById('userName').textContent = currentUser.name || 'Student';
-            document.getElementById('userAvatar').textContent = (currentUser.name || 'S').charAt(0).toUpperCase();
-            document.getElementById('userBlockInfo').textContent = `Block: ${currentUser.block} - Room: ${currentUser.roomNumber}`;
-            
-            showPage('generate');
-        }
-
-        function showPage(page) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event?.target?.classList.add('active');
-            
-            document.getElementById('generatePage').classList.add('hidden');
-            document.getElementById('historyPage').classList.add('hidden');
-            
-            if (page === 'generate') {
-                document.getElementById('generatePage').classList.remove('hidden');
-            } else if (page === 'history') {
-                document.getElementById('historyPage').classList.remove('hidden');
-                loadHistory();
-            }
-        }
-
-        async function handleCreateRequest(e) {
-            e.preventDefault();
-            const btn = document.getElementById('createReqBtn');
-            const type = document.getElementById('requestType').value;
-            const instructions = document.getElementById('requestInstructions').value;
-            
-            btn.disabled = true;
-            btn.textContent = 'Generating...';
-            
-            try {
-                const res = await fetch('/api/requests', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('studentToken')
-                    },
-                    body: JSON.stringify({ type, instructions })
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                document.getElementById('qrCodeImage').src = data.request.qrCode;
-                document.getElementById('qrRequestId').textContent = 'Request ID: ' + data.request.requestId;
-                document.getElementById('qrCard').classList.remove('hidden');
-                
-                showToast('Request generated successfully!', 'success');
-                
-                // Reset form
-                document.getElementById('requestType').value = '';
-                document.getElementById('requestInstructions').value = '';
-                
-            } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Generate Request';
-            }
-        }
-
-        async function loadHistory() {
-            const grid = document.getElementById('historyGrid');
-            const status = document.getElementById('historyFilter').value;
-            
-            grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-            
-            try {
-                const res = await fetch(`/api/requests?status=${status}`, {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('studentToken') }
-                });
-                
-                const requests = await res.json();
-                
-                if (requests.length === 0) {
-                    grid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">📋</div>
-                            <h3 class="empty-title">No Requests Found</h3>
-                            <p>You haven't made any cleaning requests yet.</p>
-                        </div>
-                    `;
-                    return;
+                if (res.ok) {
+                    showToast('Account created! Please login.', 'success');
+                    toggleAuth('login');
+                } else {
+                    showToast(data.error, 'error');
                 }
-                
-                grid.innerHTML = requests.map(req => `
-                    <div class="request-card">
-                        <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
-                            <span class="request-status status-${req.status}">${req.status.replace('_', ' ')}</span>
-                        </div>
-                        <div class="request-type">${req.type}</div>
-                        <div class="request-room">Room ${req.room_number}</div>
-                        <div class="request-block">${req.block} Block</div>
-                        <div class="request-meta">
-                            <span>📅 ${new Date(req.created_at).toLocaleDateString()}</span>
-                            <span>🕐 ${new Date(req.created_at).toLocaleTimeString()}</span>
-                        </div>
-                        ${req.instructions ? `<p class="text-muted mb-2">${req.instructions}</p>` : ''}
-                        ${req.status === 'completed' && !req.rating ? `
-                            <button class="btn btn-primary btn-sm" onclick="openRatingModal(${req.id})">
-                                Rate Service
-                            </button>
-                        ` : ''}
-                        ${req.rating ? `
-                            <div class="mt-2">
-                                <span class="text-warning">${'★'.repeat(req.rating)}${'☆'.repeat(5-req.rating)}</span>
-                                ${req.feedback ? `<p class="text-muted mt-1" style="font-size: 0.85rem;">"${req.feedback}"</p>` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-                
-            } catch (err) {
-                grid.innerHTML = '<p class="text-error">Failed to load requests</p>';
+            } catch (e) {
+                showToast('Signup failed', 'error');
             }
         }
 
-        // Rating functions
-        function openRatingModal(requestId) {
-            currentRequestId = requestId;
-            selectedRating = 0;
-            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-            document.getElementById('feedbackInput').value = '';
-            document.getElementById('ratingModal').classList.add('active');
+        // verifyOtp function removed
+
+        function initDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-block-room').textContent = `${user.block} Block - ${user.roomNumber}`;
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'flex';
+
+            fetchRequests();
         }
 
-        function closeRatingModal() {
-            document.getElementById('ratingModal').classList.remove('active');
-        }
+        async function createRequest() {
+            const type = document.getElementById('req-type').value;
+            const instructions = document.getElementById('req-instructions').value;
+            const token = localStorage.getItem('token');
 
-        document.querySelectorAll('.star').forEach(star => {
-            star.addEventListener('click', () => {
-                selectedRating = parseInt(star.dataset.rating);
-                document.querySelectorAll('.star').forEach(s => {
-                    s.classList.toggle('active', parseInt(s.dataset.rating) <= selectedRating);
-                });
+            const res = await fetch(`${API_URL}/requests`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ type, instructions })
             });
-        });
 
-        async function submitRating() {
-            if (selectedRating === 0) {
-                showToast('Please select a rating', 'warning');
-                return;
-            }
-            
-            const feedback = document.getElementById('feedbackInput').value;
-            
-            try {
-                const res = await fetch(`/api/requests/${currentRequestId}/rate`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('studentToken')
-                    },
-                    body: JSON.stringify({ rating: selectedRating, feedback })
-                });
-                
-                if (!res.ok) throw new Error('Failed to submit rating');
-                
-                showToast('Thank you for your feedback!', 'success');
-                closeRatingModal();
-                loadHistory();
-                
-            } catch (err) {
-                showToast(err.message, 'error');
+            if (res.ok) {
+                showToast('Request Created!', 'success');
+                // document.getElementById('req-instructions').value = ''; // Clear input
+                fetchRequests();
+            } else {
+                showToast('Failed to create request', 'error');
             }
         }
 
-        // Toast function
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-            
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type]}</span>
-                <span class="toast-message">${message}</span>
-            `;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        if (localStorage.getItem('token')) {
+            initDashboard();
         }
     </script>
 </body>
+
 </html>
