@@ -165,51 +165,94 @@
         </main>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <script>
         lucide.createIcons();
         const API_URL = '/api';
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'alert-circle';
+            if (type === 'warning') icon = 'alert-triangle';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
 
         function showDashboard(view, el) {
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             if (el) el.classList.add('active');
 
-            if (view === 'overview') {
-                document.getElementById('view-overview').style.display = 'block';
-                document.getElementById('view-history').style.display = 'none';
-                document.getElementById('view-roommates').style.display = 'none';
-            } else if (view === 'history') {
-                document.getElementById('view-overview').style.display = 'none';
-                document.getElementById('view-history').style.display = 'block';
-                document.getElementById('view-roommates').style.display = 'none';
-                fetchRequests();
-            } else if (view === 'roommates') {
+            // Simple transition fade
+            const mainContent = document.querySelector('.main-content');
+            mainContent.style.opacity = '0';
+
+            setTimeout(() => {
                 document.getElementById('view-overview').style.display = 'none';
                 document.getElementById('view-history').style.display = 'none';
-                document.getElementById('view-roommates').style.display = 'block';
-                fetchRoommates();
-            }
+                document.getElementById('view-roommates').style.display = 'none';
+
+                if (view === 'overview') {
+                    document.getElementById('view-overview').style.display = 'block';
+                } else if (view === 'history') {
+                    document.getElementById('view-history').style.display = 'block';
+                    fetchRequests();
+                } else if (view === 'roommates') {
+                    document.getElementById('view-roommates').style.display = 'block';
+                    fetchRoommates();
+                }
+                mainContent.style.opacity = '1';
+            }, 200);
         }
 
         async function fetchRequests() {
-            console.log("Fetching requests...");
+            // console.log("Fetching requests...");
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/requests`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const reqs = await res.json();
-            console.log("Requests received:", reqs);
 
             const activeGrid = document.getElementById('active-requests');
             const historyGrid = document.getElementById('history-requests');
             if (activeGrid) activeGrid.innerHTML = '';
             if (historyGrid) historyGrid.innerHTML = '';
 
-            reqs.forEach(req => {
+            reqs.forEach((req, index) => {
                 const createdDate = new Date(req.created_at).toLocaleString();
                 const completedDate = req.completed_at ? new Date(req.completed_at).toLocaleString() : '-';
 
                 const card = document.createElement('div');
                 card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`; // Staggered animation
 
                 let statusBadge = `<span class="request-status status-${req.status.toLowerCase()}">${req.status}</span>`;
 
@@ -217,20 +260,19 @@
                     if (!activeGrid) return;
                     card.innerHTML = `
                         <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
+                            <span class="request-id">#${req.id}</span>
                             ${statusBadge}
                         </div>
                         <div class="card-title">${req.type}</div>
-                        <p class="portal-desc">${req.instructions || ''}</p>
-                        <p class="text-xs text-muted mt-2">Created: ${createdDate}</p>
-                        <div style="margin-top: 1rem; padding: 1rem; background: #fff; border-radius: 8px; text-align: center;">
-                            <img src="${req.qr_code}" alt="QR Code" width="100" style="display: block; margin: 0 auto;">
-                            <p style="font-size: 0.8rem; color: #333; margin-top: 5px;">Scan to complete</p>
+                        <p class="portal-desc">${req.instructions || 'No special instructions'}</p>
+                        <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;"><i data-lucide="calendar" style="width:14px; display:inline; vertical-align:middle"></i> ${createdDate}</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.9); border-radius: 8px; text-align: center;">
+                            <img src="${req.qr_code}" alt="QR Code" width="100" style="display: block; margin: 0 auto; mix-blend-mode: multiply;">
+                            <p style="font-size: 0.8rem; color: #333; margin-top: 5px; font-weight:600;">Scan to complete</p>
                         </div>
                     `;
                     activeGrid.appendChild(card);
                 } else {
-                    console.log("Adding to history:", req);
                     if (!historyGrid) return;
                     let ratingHtml = '';
                     if (req.status === 'completed') {
@@ -245,14 +287,14 @@
 
                     card.innerHTML = `
                         <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
+                            <span class="request-id">#${req.id}</span>
                             ${statusBadge}
                         </div>
                         <div class="card-title">${req.type}</div>
                         <p class="portal-desc">${req.instructions || ''}</p>
-                        <div class="text-xs text-muted mt-2">
-                             <div>Created: ${createdDate}</div>
-                             <div>Completed: ${completedDate}</div>
+                        <div class="text-xs text-muted mt-2" style="display:grid; gap:4px;">
+                             <div><i data-lucide="clock" style="width:12px"></i> Created: ${createdDate}</div>
+                             <div><i data-lucide="check-circle" style="width:12px"></i> Completed: ${completedDate}</div>
                         </div>
                         ${ratingHtml}
                     `;
@@ -260,10 +302,10 @@
                 }
             });
 
-            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<p class="text-muted">No active requests.</p>';
-            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<p class="text-muted">No history found.</p>';
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No active requests.</div>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No history found.</div>';
 
-            if (window.lucide) window.lucide.createIcons();
+            lucide.createIcons();
         }
 
         async function openRating(id) {
@@ -282,11 +324,11 @@
                 });
 
                 if (res.ok) {
-                    alert("Thank you for your feedback!");
+                    showToast("Thank you for your feedback!", "success");
                     fetchRequests();
                 }
             } else if (rating) {
-                alert("Please enter a number between 1 and 5");
+                showToast("Please enter a number between 1 and 5", "warning");
             }
         }
 
@@ -301,13 +343,14 @@
             grid.innerHTML = '';
 
             if (users.length === 0) {
-                grid.innerHTML = '<p class="text-muted">No roommates found.</p>';
+                grid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No roommates found.</div>';
                 return;
             }
 
-            users.forEach(user => {
+            users.forEach((user, index) => {
                 const card = document.createElement('div');
                 card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
                 card.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.25rem;">${user.name.charAt(0)}</div>
@@ -337,13 +380,14 @@
                 if (res.ok) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    initDashboard();
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
                 } else {
-                    alert(data.error);
+                    showToast(data.error, 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Login failed');
+                showToast('Login failed', 'error');
             }
         }
 
@@ -377,7 +421,7 @@
             const roomNumber = document.getElementById('su-room').value;
 
             if (!email.endsWith('@vitstudent.ac.in')) {
-                alert('Please use VIT email (@vitstudent.ac.in)');
+                showToast('Please use VIT email (@vitstudent.ac.in)', 'warning');
                 return;
             }
 
@@ -396,13 +440,13 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    alert('Account created! Please login.');
+                    showToast('Account created! Please login.', 'success');
                     toggleAuth('login');
                 } else {
-                    alert(data.error);
+                    showToast(data.error, 'error');
                 }
             } catch (e) {
-                alert('Signup failed');
+                showToast('Signup failed', 'error');
             }
         }
 
@@ -437,10 +481,11 @@
             });
 
             if (res.ok) {
-                alert('Request Created!');
+                showToast('Request Created!', 'success');
+                // document.getElementById('req-instructions').value = ''; // Clear input
                 fetchRequests();
             } else {
-                alert('Failed to create request');
+                showToast('Failed to create request', 'error');
             }
         }
 

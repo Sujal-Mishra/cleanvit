@@ -95,9 +95,40 @@
         </main>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <script>
         lucide.createIcons();
         const API_URL = '/api';
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'alert-circle';
+            if (type === 'warning') icon = 'alert-triangle';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
+        }
 
         async function login(e) {
             e.preventDefault();
@@ -115,12 +146,13 @@
                 if (res.ok) {
                     localStorage.setItem('cleaner_token', data.token);
                     localStorage.setItem('cleaner', JSON.stringify(data.cleaner));
-                    initDashboard();
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
                 } else {
-                    alert(data.error);
+                    showToast(data.error, 'error');
                 }
             } catch (err) {
-                alert('Login failed');
+                showToast('Login failed', 'error');
             }
         }
 
@@ -137,28 +169,34 @@
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('dashboard-section').style.display = 'flex';
 
-            fetchPending();
-            fetchRequests();
+            showView('pending'); // Default view
         }
 
         function showView(view, el) {
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             if (el) el.classList.add('active');
+            else if (!el && view === 'pending') document.querySelector('.nav-item').classList.add('active'); // Default active
 
-            document.getElementById('pending-view').style.display = 'none';
-            document.getElementById('active-view').style.display = 'none';
-            document.getElementById('history-view').style.display = 'none';
+            const mainContent = document.querySelector('.main-content');
+            mainContent.style.opacity = '0';
 
-            if (view === 'pending') {
-                document.getElementById('pending-view').style.display = 'block';
-                fetchPending();
-            } else if (view === 'active') {
-                document.getElementById('active-view').style.display = 'block';
-                fetchRequests();
-            } else if (view === 'history') {
-                document.getElementById('history-view').style.display = 'block';
-                fetchRequests();
-            }
+            setTimeout(() => {
+                document.getElementById('pending-view').style.display = 'none';
+                document.getElementById('active-view').style.display = 'none';
+                document.getElementById('history-view').style.display = 'none';
+
+                if (view === 'pending') {
+                    document.getElementById('pending-view').style.display = 'block';
+                    fetchPending();
+                } else if (view === 'active') {
+                    document.getElementById('active-view').style.display = 'block';
+                    fetchRequests();
+                } else if (view === 'history') {
+                    document.getElementById('history-view').style.display = 'block';
+                    fetchRequests();
+                }
+                mainContent.style.opacity = '1';
+            }, 200);
         }
 
         async function fetchPending() {
@@ -172,16 +210,17 @@
             grid.innerHTML = '';
 
             if (reqs.length === 0) {
-                grid.innerHTML = '<p class="text-muted">No pending requests in your blocks.</p>';
+                grid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem;">No pending requests in your blocks.</div>';
                 return;
             }
 
-            reqs.forEach(req => {
+            reqs.forEach((req, index) => {
                 const card = document.createElement('div');
                 card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
                 card.innerHTML = `
                     <div class="request-header">
-                        <span class="request-id">${req.request_id}</span>
+                        <span class="request-id">#${req.id}</span>
                         <span class="request-status status-pending">PENDING</span>
                     </div>
                     <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
@@ -190,10 +229,11 @@
                     <button class="btn btn-primary btn-block" style="margin-top: 1rem;" onclick="acceptTask('${req.id}')">
                         Accept Task
                     </button>
-                    <div class="text-xs text-muted mt-2">Requested by ${req.student_name}</div>
+                    <div class="text-xs text-muted mt-2"><i data-lucide="user" style="width:12px; display:inline"></i> Requested by ${req.student_name}</div>
                 `;
                 grid.appendChild(card);
             });
+            lucide.createIcons();
         }
 
         async function fetchRequests() {
@@ -208,16 +248,17 @@
             if (activeGrid) activeGrid.innerHTML = '';
             if (historyGrid) historyGrid.innerHTML = '';
 
-            reqs.forEach(req => {
+            reqs.forEach((req, index) => {
                 const card = document.createElement('div');
                 card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
 
                 if (['in_progress', 'accepted'].includes(req.status)) {
                     if (!activeGrid) return;
                     card.innerHTML = `
                         <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
-                            <span class="request-status status-inprogress" style="background: rgba(0, 200, 83, 0.15); color: #00C853;">IN PROGRESS</span>
+                            <span class="request-id">#${req.id}</span>
+                            <span class="request-status status-in_progress">IN PROGRESS</span>
                         </div>
                         <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
                         <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
@@ -232,10 +273,10 @@
                     activeGrid.appendChild(card);
                 } else if (req.status === 'completed') {
                     if (!historyGrid) return;
-                    let ratingHtml = '<div class="text-muted mt-2">Not rated yet</div>';
+                    let ratingHtml = '<div class="text-muted mt-2" style="font-size:0.9rem">Not rated yet</div>';
                     if (req.rating) {
                         ratingHtml = `
-                            <div class="mt-2" style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">
+                            <div class="mt-2" style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 8px;">
                                 <div class="text-warning">Rating: ${'★'.repeat(req.rating)}${'☆'.repeat(5 - req.rating)}</div>
                                 ${req.feedback ? `<div class="text-xs text-muted mt-1">"${req.feedback}"</div>` : ''}
                             </div>
@@ -244,12 +285,12 @@
 
                     card.innerHTML = `
                         <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
-                            <span class="request-status status-completed" style="background: #e0f2f1; color: #00897b;">COMPLETED</span>
+                            <span class="request-id">#${req.id}</span>
+                            <span class="request-status status-completed">COMPLETED</span>
                         </div>
                         <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
                          <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
-                        <div class="text-xs text-muted mt-2">
+                        <div class="text-xs text-muted mt-2" style="display:grid; gap:4px">
                              <div>Accepted: ${new Date(req.accepted_at).toLocaleString()}</div>
                              <div>Completed: ${new Date(req.completed_at).toLocaleString()}</div>
                         </div>
@@ -259,8 +300,8 @@
                 }
             });
 
-            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<p class="text-muted">No active jobs.</p>';
-            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<p class="text-muted">No cleaning history.</p>';
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem">No active jobs.</div>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem">No cleaning history.</div>';
             lucide.createIcons();
         }
 
@@ -272,13 +313,15 @@
             });
 
             if (res.ok) {
-                alert('Task Accepted!');
+                showToast('Task Accepted!', 'success');
                 showView('active');
+            } else {
+                showToast('Failed to accept task', 'error');
             }
         }
 
         async function completeTask(id) {
-            const qrData = prompt("Scan Student QR Code (Enter Request ID):");
+            const qrData = prompt("Scan Student QR Code (Enter Request ID for Dev):");
             if (!qrData) return;
 
             const token = localStorage.getItem('cleaner_token');
@@ -292,10 +335,10 @@
             });
 
             if (res.ok) {
-                alert('Job Completed!');
-                fetchActive();
+                showToast('Job Completed!', 'success');
+                showView('history'); // Switch to history view
             } else {
-                alert('Verification Failed (Invalid Request ID)');
+                showToast('Verification Failed (Invalid Request ID)', 'error');
             }
         }
 

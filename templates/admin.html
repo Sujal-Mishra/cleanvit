@@ -143,10 +143,41 @@
         </form>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <script>
         lucide.createIcons();
         const API_URL = '/api';
         let statsChart = null;
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'alert-circle';
+            if (type === 'warning') icon = 'alert-triangle';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
+        }
 
         // Globals
         const modal = document.getElementById('add-cleaner-modal');
@@ -167,12 +198,13 @@
 
                 if (res.ok) {
                     localStorage.setItem('admin_token', data.token);
-                    initDashboard();
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
                 } else {
-                    alert(data.error);
+                    showToast(data.error, 'error');
                 }
             } catch (err) {
-                alert('Login failed');
+                showToast('Login failed', 'error');
             }
         }
 
@@ -205,13 +237,15 @@
                 const res = await fetch(`${API_URL}/admin/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
                 if (res.status === 403 || res.status === 401) {
                     logout();
                     return;
                 }
+
                 const data = await res.json();
 
-                // Update Cards
+                // Update Cards with animation
                 document.getElementById('stat-total').textContent = data.totalRequests;
                 document.getElementById('stat-pending').textContent = data.pendingRequests;
                 document.getElementById('stat-completed').textContent = data.completedRequests;
@@ -231,15 +265,29 @@
                                 datasets: [{
                                     label: '# of Requests',
                                     data: data.blockStats.data,
-                                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                                    borderColor: 'rgba(54, 162, 235, 1)',
-                                    borderWidth: 1
+                                    backgroundColor: 'rgba(255, 107, 0, 0.5)',
+                                    borderColor: 'rgba(255, 107, 0, 1)',
+                                    borderWidth: 1,
+                                    borderRadius: 4
                                 }]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                scales: { y: { beginAtZero: true } }
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                        ticks: { color: '#aaa' }
+                                    },
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { color: '#aaa' }
+                                    }
+                                },
+                                plugins: {
+                                    legend: { labels: { color: '#fff' } }
+                                }
                             }
                         });
                     }
@@ -249,24 +297,27 @@
                 const reviewsList = document.getElementById('reviews-list');
                 if (data.recentReviews && data.recentReviews.length > 0) {
                     reviewsList.innerHTML = '';
-                    data.recentReviews.forEach(r => {
+                    data.recentReviews.forEach((r, i) => {
                         const stars = '⭐'.repeat(r.rating);
                         const div = document.createElement('div');
-                        div.style.padding = '0.75rem';
-                        div.style.borderBottom = '1px solid #eee';
+                        div.className = 'review-item';
+                        div.style.padding = '1rem';
+                        div.style.borderBottom = '1px solid var(--border)';
+                        div.style.animation = `fadeInUp 0.3s ease-out ${i * 0.1}s forwards`;
+                        div.style.opacity = '0'; // For animation
                         div.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
-                                <strong>${r.student}</strong>
-                                <span style="font-size:0.8rem; color:#666;">${new Date(r.date).toLocaleDateString()}</span>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; align-items:center;">
+                                <strong style="color:white;">${r.student}</strong>
+                                <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(r.date).toLocaleDateString()}</span>
                             </div>
-                            <div style="font-size:0.9rem;">${stars}</div>
-                            <div style="font-size:0.9rem; color:#444; margin-top:0.25rem;">"${r.feedback || 'No comments'}"</div>
-                            <div style="font-size:0.8rem; color:#888; margin-top:0.25rem;">Cleaner: ${r.cleaner}</div>
+                            <div style="font-size:0.9rem; margin-bottom:0.5rem;">${stars}</div>
+                            <div style="font-size:0.95rem; color:var(--text-secondary); font-style:italic;">"${r.feedback || 'No comments'}"</div>
+                            <div style="font-size:0.8rem; color:var(--primary); margin-top:0.5rem; text-align:right;">Cleaner: ${r.cleaner}</div>
                         `;
                         reviewsList.appendChild(div);
                     });
                 } else {
-                    reviewsList.innerHTML = '<p class="text-muted text-sm p-3">No reviews yet.</p>';
+                    reviewsList.innerHTML = '<p class="text-muted text-sm p-3" style="text-align:center;">No reviews yet.</p>';
                 }
 
             } catch (err) {
@@ -288,19 +339,32 @@
                 grid.innerHTML = '';
 
                 if (cleaners.length === 0) {
-                    grid.innerHTML = '<p class="text-muted">No cleaners found.</p>';
+                    grid.innerHTML = '<p class="text-muted" style="text-align:center; padding:1rem;">No cleaners found.</p>';
                     return;
                 }
 
-                cleaners.forEach(c => {
+                cleaners.forEach((c, index) => {
                     const blocks = c.assigned_blocks ? JSON.parse(c.assigned_blocks).join(", ") : "None";
                     const card = document.createElement('div');
                     card.className = 'request-card'; // Reuse style
+                    card.style.animationDelay = `${index * 0.1}s`;
+
+                    const statusColor = c.is_active ? 'var(--success)' : 'var(--error)';
+
                     card.innerHTML = `
-                    <div class="card-title">${c.name} (${c.employee_id})</div>
-                    <p class="portal-desc">Blocks: ${blocks}</p>
-                    <div class="text-xs text-muted mt-2">Active: ${c.is_active ? 'Yes' : 'No'}</div>
-                `;
+                        <div style="display:flex; justify-content:space-between; align-items:start">
+                            <div>
+                                <div class="card-title">${c.name}</div>
+                                <div style="font-family:monospace; color:var(--text-muted); font-size:0.9rem;">${c.employee_id}</div>
+                            </div>
+                            <div style="width:10px; height:10px; border-radius:50%; background:${statusColor}; box-shadow:0 0 10px ${statusColor}"></div>
+                        </div>
+                        <div class="portal-desc" style="margin-top:1rem;">
+                            <span style="display:inline-block; background:rgba(255,255,255,0.1); padding:0.25rem 0.75rem; border-radius:12px; font-size:0.85rem;">
+                                Blocks: ${blocks}
+                            </span>
+                        </div>
+                    `;
                     grid.appendChild(card);
                 });
             } catch (err) {
@@ -335,14 +399,14 @@
                 const result = await res.json();
 
                 if (res.ok) {
-                    alert('Cleaner added successfully');
+                    showToast('Cleaner added successfully', 'success');
                     closeAddCleanerModal();
                     fetchCleaners();
                 } else {
-                    alert(result.error);
+                    showToast(result.error || 'Failed to add cleaner', 'error');
                 }
             } catch (err) {
-                alert('Failed to add cleaner');
+                showToast('Failed to connect to server', 'error');
             }
         });
 
