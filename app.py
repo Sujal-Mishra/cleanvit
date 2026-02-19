@@ -670,14 +670,21 @@ def add_cleaner():
         return jsonify({'error': str(e)}), 400
 
 # Try imports for QR decoding
+HAS_CV2 = False
+HAS_PYZBAR = False
+
 try:
     import cv2
     import numpy as np
-    from pyzbar.pyzbar import decode
     HAS_CV2 = True
-except ImportError:
-    HAS_CV2 = False
-    print("Warning: cv2 or pyzbar not installed. QR scanning will fail.")
+except ImportError as e:
+    print(f"Warning: OpenCV (cv2) not found: {e}")
+
+try:
+    from pyzbar.pyzbar import decode
+    HAS_PYZBAR = True
+except Exception as e:
+    print(f"Warning: Pyzbar not found or DLL missing: {e}")
 
 @app.route('/api/requests/<id>/complete-scan', methods=['PUT'])
 @token_required
@@ -692,24 +699,47 @@ def complete_job_scan(id):
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if not HAS_CV2:
-        return jsonify({'error': 'Server missing QR libraries (cv2/pyzbar)'}), 500
+    if not HAS_CV2 and not HAS_PYZBAR:
+        return jsonify({'error': 'Server missing QR libraries'}), 500
 
     try:
         # Read image to numpy array
         filestr = file.read()
         npimg = np.frombuffer(filestr, np.uint8)
-        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
         
-        # Decode QR
-        decoded_objects = decode(img)
+        if HAS_CV2:
+            img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+        else:
+            # Should not happen as we need cv2 to decode image to array for pyzbar usually, 
+            # unless we use PIL. But we assumed cv2/numpy for image loading.
+            # If HAS_CV2 is false, we can't easily load the image with this code.
+            # So fallback: we really need cv2 for image loading in this implementation.
+            return jsonify({'error': 'Server missing OpenCV for image processing'}), 500
         
-        if not decoded_objects:
+        qr_data = None
+        
+        # 1. Try Pyzbar (Robust)
+        if HAS_PYZBAR:
+            try:
+                decoded_objects = decode(img)
+                if decoded_objects:
+                    qr_data = decoded_objects[0].data.decode('utf-8')
+            except Exception as e:
+                print(f"Pyzbar scan error: {e}")
+        
+        # 2. Fallback to CV2 (Native)
+        if not qr_data and HAS_CV2:
+            try:
+                detector = cv2.QRCodeDetector()
+                data, _, _ = detector.detectAndDecode(img)
+                if data:
+                    qr_data = data
+            except Exception as e:
+                print(f"CV2 scan error: {e}")
+        
+        if not qr_data:
             return jsonify({'error': 'No QR code found in image'}), 400
             
-        # Get data from first QR
-        qr_data = decoded_objects[0].data.decode('utf-8')
-        
         # Verify
         req_res = supabase.table('requests').select('*').eq('id', id).execute()
         if not req_res.data:
@@ -718,9 +748,8 @@ def complete_job_scan(id):
         request_obj = req_res.data[0]
         
         # The QR code contains the 'request_id' field (e.g., REQ-XXXX)
-        # We need to match it against the stored request_id
         if qr_data != request_obj['request_id']:
-             return jsonify({'error': f'Invalid QR Code. Scanned: {qr_data}'}), 400
+             return jsonify({'error': f'Invalid QR Code Scanned: {qr_data}'}), 400
              
         if request_obj['status'] != 'in_progress':
              return jsonify({'error': 'Request is not in progress'}), 400
