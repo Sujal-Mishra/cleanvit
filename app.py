@@ -680,3 +680,72 @@ if __name__ == '__main__':
         =============================================================
         """)
     app.run(debug=True, port=5000)
+
+# Try imports for QR decoding
+try:
+    import cv2
+    import numpy as np
+    from pyzbar.pyzbar import decode
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+    print("Warning: cv2 or pyzbar not installed. QR scanning will fail.")
+
+@app.route('/api/requests/<id>/complete-scan', methods=['PUT'])
+@token_required
+def complete_job_scan(id):
+    if not supabase: return jsonify({'error': 'Database not configured'}), 500
+    if g.current_user['role'] != 'cleaner': return jsonify({'error': 'Unauthorized'}), 403
+
+    if 'qr_image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
+        
+    file = request.files['qr_image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if not HAS_CV2:
+        return jsonify({'error': 'Server missing QR libraries (cv2/pyzbar)'}), 500
+
+    try:
+        # Read image to numpy array
+        filestr = file.read()
+        npimg = np.frombuffer(filestr, np.uint8)
+        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+        
+        # Decode QR
+        decoded_objects = decode(img)
+        
+        if not decoded_objects:
+            return jsonify({'error': 'No QR code found in image'}), 400
+            
+        # Get data from first QR
+        qr_data = decoded_objects[0].data.decode('utf-8')
+        
+        # Verify
+        req_res = supabase.table('requests').select('*').eq('id', id).execute()
+        if not req_res.data:
+            return jsonify({'error': 'Request not found'}), 404
+            
+        request_obj = req_res.data[0]
+        
+        # The QR code contains the 'request_id' field (e.g., REQ-XXXX)
+        # We need to match it against the stored request_id
+        if qr_data != request_obj['request_id']:
+             return jsonify({'error': f'Invalid QR Code. Scanned: {qr_data}'}), 400
+             
+        if request_obj['status'] != 'in_progress':
+             return jsonify({'error': 'Request is not in progress'}), 400
+             
+        # valid -> complete
+        supabase.table('requests').update({
+            'status': 'completed',
+            'completed_at': datetime.datetime.utcnow().isoformat(),
+            'completed_by': g.current_user['id']
+        }).eq('id', id).execute()
+        
+        return jsonify({'message': 'Job verified and completed'})
+        
+    except Exception as e:
+        print(f"QR Scan Error: {e}")
+        return jsonify({'error': f'Failed to process image: {str(e)}'}), 500

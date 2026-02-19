@@ -1,475 +1,408 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cleaner Portal - Clean VIT</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Clean VIT - Cleaner Portal</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
 
+<body>
     <!-- Auth Section -->
-    <div class="auth-container" id="authSection">
+    <div id="auth-section" class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <a class="auth-back" href="/">← Back to Home</a>
+                <a href="/" class="auth-back">← Back to Home</a>
                 <h1 class="auth-title">Cleaner Login</h1>
-                <p class="auth-subtitle">Enter your employee credentials</p>
             </div>
-            
-            <form onsubmit="handleLogin(event)">
+
+            <form id="login-form">
                 <div class="form-group">
                     <label class="form-label">Employee ID</label>
-                    <input type="text" class="form-input" id="loginEmployeeId" placeholder="e.g., CLN001" required>
+                    <input type="text" class="form-input" id="emp-id" placeholder="CLN001" required>
                 </div>
-                
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" required>
+                    <input type="password" class="form-input" id="password" required>
                 </div>
-                
-                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
-                    Login
-                </button>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
             </form>
-            
-            <div class="auth-footer mt-3">
-                <p class="text-muted" style="font-size: 0.85rem;">
-                    Demo credentials: CLN001 / cleaner123
-                </p>
-            </div>
         </div>
     </div>
 
     <!-- Dashboard Section -->
-    <div class="dashboard hidden" id="dashboardSection">
-        <!-- Sidebar -->
+    <div id="dashboard-section" class="dashboard" style="display: none;">
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <div class="sidebar-logo-icon">🧹</div>
-                <span class="sidebar-logo-text">Clean VIT</span>
+                <div class="sidebar-logo-icon">👷</div>
+                <div class="sidebar-logo-text">Cleaner Portal</div>
             </div>
-            
+
             <nav class="sidebar-nav">
-                <a class="nav-item active" onclick="showPage('pending')">
-                    <span class="nav-icon">📥</span>
-                    Pending Requests
+                <a href="#" class="nav-item active" onclick="showView('pending', this)">
+                    <div class="nav-icon"><i data-lucide="list"></i></div>
+                    Pending
                 </a>
-                <a class="nav-item" onclick="showPage('active')">
-                    <span class="nav-icon">🔄</span>
+                <a href="#" class="nav-item" onclick="showView('active', this)">
+                    <div class="nav-icon"><i data-lucide="activity"></i></div>
                     Active Jobs
                 </a>
+                <a href="#" class="nav-item" onclick="showView('history', this)">
+                    <div class="nav-icon"><i data-lucide="clock"></i></div>
+                    History
+                </a>
             </nav>
-            
+
             <div class="sidebar-user">
                 <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">C</div>
+                    <div class="user-avatar">C</div>
                     <div class="user-details">
-                        <div class="user-name" id="userName">Cleaner</div>
+                        <div class="user-name" id="user-name">Cleaner Name</div>
                         <div class="user-role">Cleaner</div>
                     </div>
                 </div>
-                <div class="user-block" id="userBlocks">Assigned: --</div>
-                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+                <div class="user-block" id="assigned-blocks">Blocks: A, B</div>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Pending Requests Page -->
-            <div id="pendingPage">
-                <div class="page-header">
-                    <h1 class="page-title">Pending Requests</h1>
-                    <p class="page-subtitle">Requests waiting to be accepted (Oldest first)</p>
-                </div>
-
-                <div class="requests-grid" id="pendingGrid">
-                    <!-- Requests will be loaded here -->
-                </div>
+            <div id="pending-view">
+                <header class="page-header">
+                    <h1 class="page-title">Pending Tasks</h1>
+                    <p class="page-subtitle">Accept tasks to start working</p>
+                </header>
+                <div class="requests-grid" id="pending-requests"></div>
             </div>
 
-            <!-- Active Jobs Page -->
-            <div id="activePage" class="hidden">
-                <div class="page-header">
-                    <h1 class="page-title">Active Jobs</h1>
-                    <p class="page-subtitle">Your accepted cleaning requests</p>
-                </div>
+            <div id="active-view" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">My Active Jobs</h1>
+                    <p class="page-subtitle">Complete jobs by scanning QR codes</p>
+                </header>
+                <div class="requests-grid" id="active-requests"></div>
+            </div>
 
-                <div class="requests-grid" id="activeGrid">
-                    <!-- Active jobs will be loaded here -->
-                </div>
+            <div id="history-view" style="display: none;">
+                <header class="page-header">
+                    <h1 class="page-title">Job History</h1>
+                    <p class="page-subtitle">Past completed jobs and ratings</p>
+                </header>
+                <div class="requests-grid" id="history-requests"></div>
             </div>
         </main>
     </div>
 
-    <!-- QR Scanner Modal -->
-    <div class="modal-overlay" id="scannerModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Scan QR Code</h3>
-                <button class="modal-close" onclick="closeScannerModal()">×</button>
-            </div>
-            <div style="text-align: center;">
-                <p class="text-muted mb-3">Ask the student to show their QR code, then scan it to complete the job</p>
-                
-                <div class="scanner-container">
-                    <div class="scanner-line"></div>
-                    <div class="scanner-placeholder">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
-                        <p>Camera scanner</p>
-                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Click below to enter QR manually</p>
-                    </div>
-                </div>
-                
-                <div class="form-group mt-3">
-                    <label class="form-label">Or Enter QR Data Manually</label>
-                    <input type="text" class="form-input" id="qrInput" placeholder="Paste QR code data here">
-                </div>
-                
-                <button class="btn btn-success btn-block mt-2" onclick="completeJob()">
-                    Complete Job
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <script>
-        // Global state
-        let currentUser = null;
-        let currentRequestId = null;
-        let refreshInterval = null;
+        lucide.createIcons();
+        const API_URL = '/api';
 
-        // Check auth on load
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('cleanerToken');
-            const user = localStorage.getItem('cleanerUser');
-            
-            if (token && user) {
-                currentUser = JSON.parse(user);
-                showDashboard();
-                startAutoRefresh();
-            }
-        });
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
 
-        // Auth functions
-        async function handleLogin(e) {
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'alert-circle';
+            if (type === 'warning') icon = 'alert-triangle';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        async function login(e) {
             e.preventDefault();
-            const btn = document.getElementById('loginBtn');
-            const employeeId = document.getElementById('loginEmployeeId').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            btn.disabled = true;
-            btn.textContent = 'Logging in...';
-            
+            const employeeId = document.getElementById('emp-id').value;
+            const password = document.getElementById('password').value;
+
             try {
-                const res = await fetch('/api/auth/cleaner/login', {
+                const res = await fetch(`${API_URL}/auth/cleaner/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ employeeId, password })
                 });
-                
                 const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                localStorage.setItem('cleanerToken', data.token);
-                localStorage.setItem('cleanerUser', JSON.stringify(data.cleaner));
-                currentUser = data.cleaner;
-                
-                showToast('Welcome back, ' + data.cleaner.name + '!', 'success');
-                showDashboard();
-                startAutoRefresh();
-                
-            } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Login';
-            }
-        }
 
-        function handleLogout() {
-            localStorage.removeItem('cleanerToken');
-            localStorage.removeItem('cleanerUser');
-            currentUser = null;
-            
-            if (refreshInterval) clearInterval(refreshInterval);
-            
-            document.getElementById('dashboardSection').classList.add('hidden');
-            document.getElementById('authSection').classList.remove('hidden');
-            
-            document.getElementById('loginEmployeeId').value = '';
-            document.getElementById('loginPassword').value = '';
-        }
-
-        // Dashboard functions
-        function showDashboard() {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboardSection').classList.remove('hidden');
-            
-            document.getElementById('userName').textContent = currentUser.name || 'Cleaner';
-            document.getElementById('userAvatar').textContent = (currentUser.name || 'C').charAt(0).toUpperCase();
-            document.getElementById('userBlocks').textContent = 'Blocks: ' + currentUser.assignedBlocks.join(', ');
-            
-            showPage('pending');
-        }
-
-        function showPage(page) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event?.target?.classList.add('active');
-            
-            document.getElementById('pendingPage').classList.add('hidden');
-            document.getElementById('activePage').classList.add('hidden');
-            
-            if (page === 'pending') {
-                document.getElementById('pendingPage').classList.remove('hidden');
-                loadPendingRequests();
-            } else if (page === 'active') {
-                document.getElementById('activePage').classList.remove('hidden');
-                loadActiveJobs();
-            }
-        }
-
-        function startAutoRefresh() {
-            // Refresh every 30 seconds to check for status changes
-            refreshInterval = setInterval(() => {
-                if (document.getElementById('pendingPage').classList.contains('hidden') === false) {
-                    loadPendingRequests();
+                if (res.ok) {
+                    localStorage.setItem('cleaner_token', data.token);
+                    localStorage.setItem('cleaner', JSON.stringify(data.cleaner));
+                    showToast('Login successful', 'success');
+                    setTimeout(initDashboard, 500);
+                } else {
+                    showToast(data.error, 'error');
                 }
-                if (document.getElementById('activePage').classList.contains('hidden') === false) {
-                    loadActiveJobs();
-                }
-            }, 30000);
-        }
-
-        async function loadPendingRequests() {
-            const grid = document.getElementById('pendingGrid');
-            
-            grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-            
-            try {
-                const res = await fetch('/api/requests/pending', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('cleanerToken') }
-                });
-                
-                const requests = await res.json();
-                
-                if (requests.length === 0) {
-                    grid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">✅</div>
-                            <h3 class="empty-title">All Caught Up!</h3>
-                            <p>No pending requests in your assigned blocks.</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                grid.innerHTML = requests.map(req => `
-                    <div class="request-card">
-                        <div class="request-header">
-                            <span class="request-id">${req.request_id}</span>
-                            <span class="request-status status-pending">Pending</span>
-                        </div>
-                        <div class="request-type">${req.type}</div>
-                        <div class="request-room">Room ${req.room_number}</div>
-                        <div class="request-block">${req.block} Block</div>
-                        <div class="request-meta">
-                            <span>👤 ${req.student_name}</span>
-                        </div>
-                        <div class="request-meta">
-                            <span>📅 ${new Date(req.created_at).toLocaleDateString()}</span>
-                            <span>🕐 ${timeAgo(req.created_at)}</span>
-                        </div>
-                        ${req.instructions ? `<p class="text-muted mb-2" style="font-size: 0.9rem;">📝 ${req.instructions}</p>` : ''}
-                        <button class="btn btn-success btn-block" onclick="acceptRequest(${req.id})">
-                            Accept Request
-                        </button>
-                    </div>
-                `).join('');
-                
             } catch (err) {
-                grid.innerHTML = '<p class="text-error">Failed to load requests</p>';
+                showToast('Login failed', 'error');
             }
         }
 
-        async function loadActiveJobs() {
-            const grid = document.getElementById('activeGrid');
-            
-            grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-            
-            try {
-                const res = await fetch('/api/requests/active', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('cleanerToken') }
-                });
-                
-                const requests = await res.json();
-                
-                if (requests.length === 0) {
-                    grid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">💼</div>
-                            <h3 class="empty-title">No Active Jobs</h3>
-                            <p>You haven't accepted any requests yet.</p>
-                        </div>
-                    `;
-                    return;
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        function initDashboard() {
+            const token = localStorage.getItem('cleaner_token');
+            if (!token) return;
+
+            const cleaner = JSON.parse(localStorage.getItem('cleaner'));
+            document.getElementById('user-name').textContent = cleaner.name;
+            document.getElementById('assigned-blocks').textContent = `Blocks: ${cleaner.blocks.join(', ')}`;
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'flex';
+
+            showView('pending'); // Default view
+        }
+
+        function showView(view, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+            else if (!el && view === 'pending') document.querySelector('.nav-item').classList.add('active'); // Default active
+
+            const mainContent = document.querySelector('.main-content');
+            mainContent.style.opacity = '0';
+
+            setTimeout(() => {
+                document.getElementById('pending-view').style.display = 'none';
+                document.getElementById('active-view').style.display = 'none';
+                document.getElementById('history-view').style.display = 'none';
+
+                if (view === 'pending') {
+                    document.getElementById('pending-view').style.display = 'block';
+                    fetchPending();
+                } else if (view === 'active') {
+                    document.getElementById('active-view').style.display = 'block';
+                    fetchRequests();
+                } else if (view === 'history') {
+                    document.getElementById('history-view').style.display = 'block';
+                    fetchRequests();
                 }
-                
-                grid.innerHTML = requests.map(req => {
-                    const hoursSinceAccept = req.accepted_at ? Math.floor((Date.now() - new Date(req.accepted_at).getTime()) / (1000 * 60 * 60)) : 0;
-                    const isOverdue = hoursSinceAccept >= 3;
-                    
-                    return `
-                        <div class="request-card">
-                            <div class="request-header">
-                                <span class="request-id">${req.request_id}</span>
-                                <span class="request-status ${isOverdue ? 'status-pending' : 'status-in_progress'}">
-                                    ${isOverdue ? '⚠️ Pending' : 'In Progress'}
-                                </span>
-                            </div>
-                            <div class="request-type">${req.type}</div>
-                            <div class="request-room">Room ${req.room_number}</div>
-                            <div class="request-block">${req.block} Block</div>
-                            <div class="request-meta">
-                                <span>👤 ${req.student_name}</span>
-                            </div>
-                            <div class="request-meta">
-                                <span>⏱️ Accepted ${hoursSinceAccept}h ago</span>
-                            </div>
-                            ${isOverdue ? '<p class="text-warning mb-2">⚠️ Over 3 hours - needs attention</p>' : ''}
-                            <button class="btn btn-success btn-block" onclick="openScannerModal(${req.id})">
-                                ${isOverdue ? 'Re-accept & Complete' : 'Scan QR to Complete'}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (err) {
-                grid.innerHTML = '<p class="text-error">Failed to load active jobs</p>';
-            }
+                mainContent.style.opacity = '1';
+            }, 200);
         }
 
-        async function acceptRequest(requestId) {
-            try {
-                const res = await fetch(`/api/requests/${requestId}/accept`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('cleanerToken') }
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                showToast('Request accepted! Check Active Jobs.', 'success');
-                loadPendingRequests();
-                
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
-        }
+        async function fetchPending() {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests/pending`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
 
-        // Scanner functions
-        function openScannerModal(requestId) {
-            currentRequestId = requestId;
-            document.getElementById('qrInput').value = '';
-            document.getElementById('scannerModal').classList.add('active');
-        }
+            const grid = document.getElementById('pending-requests');
+            grid.innerHTML = '';
 
-        function closeScannerModal() {
-            document.getElementById('scannerModal').classList.remove('active');
-        }
-
-        async function completeJob() {
-            const qrData = document.getElementById('qrInput').value;
-            
-            if (!qrData.trim()) {
-                // For demo, allow completion without QR
-                await completeWithoutQR();
+            if (reqs.length === 0) {
+                grid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem;">No pending requests in your blocks.</div>';
                 return;
             }
-            
-            try {
-                const res = await fetch(`/api/requests/${currentRequestId}/complete`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('cleanerToken')
-                    },
-                    body: JSON.stringify({ qrData })
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
-                
-                showToast('Job completed successfully!', 'success');
-                closeScannerModal();
-                loadActiveJobs();
-                
-            } catch (err) {
-                showToast(err.message, 'error');
+
+            reqs.forEach((req, index) => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <div class="request-header">
+                        <span class="request-id">#${req.id}</span>
+                        <span class="request-status status-pending">PENDING</span>
+                    </div>
+                    <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                    <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                    ${req.instructions ? `<p class="text-muted text-sm">"${req.instructions}"</p>` : ''}
+                    <button class="btn btn-primary btn-block" style="margin-top: 1rem;" onclick="acceptTask('${req.id}')">
+                        Accept Task
+                    </button>
+                    <div class="text-xs text-muted mt-2"><i data-lucide="user" style="width:12px; display:inline"></i> Requested by ${req.student_name}</div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        async function fetchRequests() {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const reqs = await res.json();
+
+            const activeGrid = document.getElementById('active-requests');
+            const historyGrid = document.getElementById('history-requests');
+            if (activeGrid) activeGrid.innerHTML = '';
+            if (historyGrid) historyGrid.innerHTML = '';
+
+            reqs.forEach((req, index) => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+
+                if (['in_progress', 'accepted'].includes(req.status)) {
+                    if (!activeGrid) return;
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">#${req.id}</span>
+                            <span class="request-status status-in_progress">IN PROGRESS</span>
+                        </div>
+                        <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                        <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                        ${req.instructions ? `<p class="text-muted text-sm">"${req.instructions}"</p>` : ''}
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-success btn-block" onclick="openScanner('${req.id}')">
+                                <i data-lucide="scan-line"></i> Verify & Complete
+                            </button>
+                        </div>
+                         <div class="text-xs text-muted mt-2">Accepted: ${new Date(req.accepted_at).toLocaleString()}</div>
+                    `;
+                    activeGrid.appendChild(card);
+                } else if (req.status === 'completed') {
+                    if (!historyGrid) return;
+                    let ratingHtml = '<div class="text-muted mt-2" style="font-size:0.9rem">Not rated yet</div>';
+                    if (req.rating) {
+                        ratingHtml = `
+                            <div class="mt-2" style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 8px;">
+                                <div class="text-warning">Rating: ${'★'.repeat(req.rating)}${'☆'.repeat(5 - req.rating)}</div>
+                                ${req.feedback ? `<div class="text-xs text-muted mt-1">"${req.feedback}"</div>` : ''}
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="request-header">
+                            <span class="request-id">#${req.id}</span>
+                            <span class="request-status status-completed">COMPLETED</span>
+                        </div>
+                        <div class="card-title">Room ${req.room_number} (${req.block} Block)</div>
+                         <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
+                        <div class="text-xs text-muted mt-2" style="display:grid; gap:4px">
+                             <div>Accepted: ${new Date(req.accepted_at).toLocaleString()}</div>
+                             <div>Completed: ${new Date(req.completed_at).toLocaleString()}</div>
+                        </div>
+                        ${ratingHtml}
+                    `;
+                    historyGrid.appendChild(card);
+                }
+            });
+
+            if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem">No active jobs.</div>';
+            if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<div class="text-muted" style="text-align:center; padding:2rem">No cleaning history.</div>';
+            lucide.createIcons();
+        }
+
+        async function acceptTask(id) {
+            const token = localStorage.getItem('cleaner_token');
+            const res = await fetch(`${API_URL}/requests/${id}/accept`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                showToast('Task Accepted!', 'success');
+                showView('active');
+            } else {
+                showToast('Failed to accept task', 'error');
             }
         }
 
-        async function completeWithoutQR() {
-            // Demo mode - complete without QR
-            try {
-                const res = await fetch(`/api/requests/${currentRequestId}/complete`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('cleanerToken')
-                    },
-                    body: JSON.stringify({ qrData: 'DEMO_MODE' })
-                });
-                
-                const data = await res.json();
-                
-                showToast('Job completed successfully!', 'success');
-                closeScannerModal();
-                loadActiveJobs();
-                
-            } catch (err) {
-                // Force complete for demo
-                showToast('Job marked as complete (Demo mode)', 'success');
-                closeScannerModal();
-                loadActiveJobs();
+        // Global variable to track which task is being scanned
+        let currentScanTaskId = null;
+
+        function openScanner(taskId) {
+            currentScanTaskId = taskId;
+            document.getElementById('scanner-modal').style.display = 'flex';
+        }
+
+        function closeScanner() {
+            document.getElementById('scanner-modal').style.display = 'none';
+            document.getElementById('qr-input').value = ''; // Reset input
+            currentScanTaskId = null;
+        }
+
+        async function handleScan(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('qr_image', file);
+
+                showToast("Scanning...", "info");
+
+                try {
+                    // Send image to backend for decoding
+                    const token = localStorage.getItem('cleaner_token');
+                    const res = await fetch(`${API_URL}/requests/${currentScanTaskId}/complete-scan`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        showToast('Verified! Job Completed.', 'success');
+                        closeScanner();
+                        showView('history');
+                    } else {
+                        showToast(data.error || 'Verification Failed', 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error processing image', 'error');
+                }
             }
         }
 
-        // Utility functions
-        function timeAgo(dateString) {
-            const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
-            
-            if (seconds < 60) return 'just now';
-            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
-            return Math.floor(seconds / 86400) + 'd ago';
+
+        function logout() {
+            localStorage.removeItem('cleaner_token');
+            localStorage.removeItem('cleaner');
+            location.reload();
         }
 
-        // Toast function
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-            
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type]}</span>
-                <span class="toast-message">${message}</span>
-            `;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+        if (localStorage.getItem('cleaner_token')) {
+            initDashboard();
         }
     </script>
+
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; bg-black/80; backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; background: rgba(0,0,0,0.8);">
+        <div
+            style="background: var(--surface); padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="margin-bottom: 1rem; color: white;">Scan Student QR</h2>
+            <p class="text-muted" style="margin-bottom: 2rem;">Upload a photo of the QR code to verify completion.</p>
+
+            <label class="btn btn-primary btn-block"
+                style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                <i data-lucide="camera"></i> Take Photo / Upload
+                <input type="file" id="qr-input" accept="image/*" capture="environment" style="display: none;"
+                    onchange="handleScan(this)">
+            </label>
+
+            <button class="btn btn-outline btn-block mt-3"
+                style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); color:white;"
+                onclick="closeScanner()">
+                Cancel
+            </button>
+        </div>
+    </div>
 </body>
+
 </html>

@@ -264,7 +264,7 @@
                         <p class="portal-desc" style="margin: 0.5rem 0;">${req.type}</p>
                         ${req.instructions ? `<p class="text-muted text-sm">"${req.instructions}"</p>` : ''}
                         <div style="margin-top: 1rem;">
-                            <button class="btn btn-success btn-block" onclick="completeTask('${req.id}')">
+                            <button class="btn btn-success btn-block" onclick="openScanner('${req.id}')">
                                 <i data-lucide="scan-line"></i> Verify & Complete
                             </button>
                         </div>
@@ -320,27 +320,55 @@
             }
         }
 
-        async function completeTask(id) {
-            const qrData = prompt("Scan Student QR Code (Enter Request ID for Dev):");
-            if (!qrData) return;
+        // Global variable to track which task is being scanned
+        let currentScanTaskId = null;
 
-            const token = localStorage.getItem('cleaner_token');
-            const res = await fetch(`${API_URL}/requests/${id}/complete`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ qrData })
-            });
+        function openScanner(taskId) {
+            currentScanTaskId = taskId;
+            document.getElementById('scanner-modal').style.display = 'flex';
+        }
 
-            if (res.ok) {
-                showToast('Job Completed!', 'success');
-                showView('history'); // Switch to history view
-            } else {
-                showToast('Verification Failed (Invalid Request ID)', 'error');
+        function closeScanner() {
+            document.getElementById('scanner-modal').style.display = 'none';
+            document.getElementById('qr-input').value = ''; // Reset input
+            currentScanTaskId = null;
+        }
+
+        async function handleScan(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('qr_image', file);
+
+                showToast("Scanning...", "info");
+
+                try {
+                    // Send image to backend for decoding
+                    const token = localStorage.getItem('cleaner_token');
+                    const res = await fetch(`${API_URL}/requests/${currentScanTaskId}/complete-scan`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        showToast('Verified! Job Completed.', 'success');
+                        closeScanner();
+                        showView('history');
+                    } else {
+                        showToast(data.error || 'Verification Failed', 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error processing image', 'error');
+                }
             }
         }
+
 
         function logout() {
             localStorage.removeItem('cleaner_token');
@@ -352,6 +380,29 @@
             initDashboard();
         }
     </script>
+
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; bg-black/80; backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; background: rgba(0,0,0,0.8);">
+        <div
+            style="background: var(--surface); padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="margin-bottom: 1rem; color: white;">Scan Student QR</h2>
+            <p class="text-muted" style="margin-bottom: 2rem;">Upload a photo of the QR code to verify completion.</p>
+
+            <label class="btn btn-primary btn-block"
+                style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                <i data-lucide="camera"></i> Take Photo / Upload
+                <input type="file" id="qr-input" accept="image/*" capture="environment" style="display: none;"
+                    onchange="handleScan(this)">
+            </label>
+
+            <button class="btn btn-outline btn-block mt-3"
+                style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); color:white;"
+                onclick="closeScanner()">
+                Cancel
+            </button>
+        </div>
+    </div>
 </body>
 
 </html>
