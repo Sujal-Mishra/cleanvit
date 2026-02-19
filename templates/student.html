@@ -438,33 +438,69 @@
                 }
             });
 
+
             if (activeGrid && activeGrid.children.length === 0) activeGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No active requests.</div>';
             if (historyGrid && historyGrid.children.length === 0) historyGrid.innerHTML = '<div class="text-muted" style="grid-column: 1/-1; text-align:center; padding: 2rem;">No history found.</div>';
 
             lucide.createIcons();
         }
 
-        async function openRating(id) {
-            const rating = prompt("Rate 1-5 stars:");
-            if (rating && rating >= 1 && rating <= 5) {
-                const feedback = prompt("Any feedback? (Optional)");
-                const token = localStorage.getItem('token');
+        let currentRatingId = null;
+        let currentRatingValue = 0;
 
-                const res = await fetch(`${API_URL}/requests/${id}/rate`, {
+        function openRating(id) {
+            currentRatingId = id;
+            currentRatingValue = 0;
+            document.getElementById('rating-input').value = '';
+            document.querySelectorAll('.star-btn').forEach(btn => btn.style.color = '#ccc');
+            document.getElementById('rating-modal').style.display = 'flex';
+        }
+
+        function setRating(value) {
+            currentRatingValue = value;
+            document.querySelectorAll('.star-btn').forEach((btn, index) => {
+                if (index < value) {
+                    btn.style.color = '#FFD700'; // Gold
+                    btn.style.fill = '#FFD700';
+                } else {
+                    btn.style.color = '#ccc';
+                    btn.style.fill = 'none';
+                }
+            });
+        }
+
+        function closeRatingModal() {
+            document.getElementById('rating-modal').style.display = 'none';
+        }
+
+        async function submitRating() {
+            if (!currentRatingValue) return showToast("Please select a star rating", "warning");
+
+            const feedback = document.getElementById('rating-input').value;
+            const token = localStorage.getItem('token');
+
+            showToast("Submitting...", "info");
+
+            try {
+                const res = await fetch(`${API_URL}/requests/${currentRatingId}/rate`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ rating: parseInt(rating), feedback })
+                    body: JSON.stringify({ rating: currentRatingValue, feedback })
                 });
 
                 if (res.ok) {
                     showToast("Thank you for your feedback!", "success");
+                    closeRatingModal();
                     fetchRequests();
+                } else {
+                    showToast("Failed to submit rating", "error");
                 }
-            } else if (rating) {
-                showToast("Please enter a number between 1 and 5", "warning");
+            } catch (e) {
+                console.error(e);
+                showToast("Connection error", "error");
             }
         }
 
@@ -561,6 +597,42 @@
             }
         }
     </style>
+    <div id="rating-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200; align-items: center; justify-content: center;">
+        <div
+            style="background: var(--surface); padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <h2 style="margin-bottom: 0.5rem; color: white;">Rate Service</h2>
+            <p class="text-muted" style="margin-bottom: 1.5rem;">How was the cleaning?</p>
+
+            <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 1.5rem;">
+                <button class="star-btn" onclick="setRating(1)"
+                    style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;"><i
+                        data-lucide="star"></i></button>
+                <button class="star-btn" onclick="setRating(2)"
+                    style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;"><i
+                        data-lucide="star"></i></button>
+                <button class="star-btn" onclick="setRating(3)"
+                    style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;"><i
+                        data-lucide="star"></i></button>
+                <button class="star-btn" onclick="setRating(4)"
+                    style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;"><i
+                        data-lucide="star"></i></button>
+                <button class="star-btn" onclick="setRating(5)"
+                    style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;"><i
+                        data-lucide="star"></i></button>
+            </div>
+
+            <textarea id="rating-input" class="form-input" placeholder="Any feedback? (Optional)" rows="3"
+                style="width: 100%; margin-bottom: 1rem;"></textarea>
+
+            <button class="btn btn-primary btn-block" onclick="submitRating()">Submit Review</button>
+            <button class="btn btn-outline btn-block mt-3"
+                style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white;"
+                onclick="closeRatingModal()">
+                Cancel
+            </button>
+        </div>
+    </div>
 </body>
 
 </html>
