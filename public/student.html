@@ -187,7 +187,9 @@
             let sbKey = "{{ supabase_key }}";
 
             // If template vars not rendered (static file), fetch from API
-            if (sbUrl.includes("{{")) {
+            // If template vars not rendered (static file), fetch from API
+            // Check if it starts with '{' which indicates the template tag wasn't replaced
+            if (sbUrl.startsWith("{")) {
                 try {
                     const res = await fetch('/api/config');
                     const config = await res.json();
