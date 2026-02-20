@@ -98,9 +98,37 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <div id="reader" style="display: none;"></div>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         lucide.createIcons();
         const API_URL = '/api';
+
+        // Supabase Init
+        let supabaseClient = null;
+
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+
+                // Realtime Subscription
+                supabaseClient
+                    .channel('public:requests')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
+                        console.log('Change received!', payload);
+                        fetchJobs(); // Refresh data on any change
+                    })
+                    .subscribe();
+
+            } catch (e) {
+                console.error("Supabase init failed", e);
+            }
+        }
+
+        initSupabase();
 
         // Toast Notification System
         function showToast(message, type = 'info') {
@@ -337,20 +365,24 @@
         async function handleScan(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                const formData = new FormData();
-                formData.append('qr_image', file);
-
-                showToast("Scanning...", "info");
+                showToast("Scanning image...", "info");
 
                 try {
-                    // Send image to backend for decoding
+                    const html5QrCode = new Html5Qrcode("reader");
+                    const decodedText = await html5QrCode.scanFile(file, true);
+
+                    console.log("Decoded:", decodedText);
+                    html5QrCode.clear();
+
+                    // Send DECODED TEXT to backend (not image)
                     const token = localStorage.getItem('cleaner_token');
-                    const res = await fetch(`${API_URL}/requests/${currentScanTaskId}/complete-scan`, {
+                    const res = await fetch(`${API_URL}/requests/${currentScanTaskId}/complete`, {
                         method: 'PUT',
                         headers: {
+                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: formData
+                        body: JSON.stringify({ qrData: decodedText })
                     });
 
                     const data = await res.json();
@@ -362,9 +394,10 @@
                     } else {
                         showToast(data.error || 'Verification Failed', 'error');
                     }
-                } catch (e) {
-                    console.error(e);
-                    showToast('Error processing image', 'error');
+
+                } catch (err) {
+                    console.error("Scan error:", err);
+                    showToast('Could not find QR Code in image.', 'error');
                 }
             }
         }

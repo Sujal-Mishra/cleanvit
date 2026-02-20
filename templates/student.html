@@ -214,6 +214,28 @@
 
         initSupabase();
 
+        // Realtime Subscription
+        async function setupRealtime() {
+            // Wait for _supabase to be initialized
+            if (!_supabase) {
+                setTimeout(setupRealtime, 500);
+                return;
+            }
+
+            _supabase
+                .channel('public:requests')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
+                    console.log('Update received:', payload);
+                    // Only refresh if user is logged in
+                    if (localStorage.getItem('token')) {
+                        fetchRequests();
+                    }
+                })
+                .subscribe();
+        }
+
+        setupRealtime();
+
         async function signInWithGoogle() {
             if (!_supabase) return showToast("Supabase not initialized", "error");
 
