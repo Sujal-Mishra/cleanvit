@@ -275,9 +275,11 @@
 
                 if (data.status === 'success') {
                     // Logic success
+                    const isNewLogin = !localStorage.getItem('token');
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    showToast('Login successful', 'success');
+
+                    if (isNewLogin) showToast('Login successful', 'success');
                     setTimeout(initDashboard, 500);
                 } else if (data.status === 'profile_required') {
                     // Show profile form
