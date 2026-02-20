@@ -114,14 +114,25 @@
                 const config = await res.json();
                 supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
 
+                console.log("Supabase Client Initialized");
+
                 // Realtime Subscription
-                supabaseClient
+                const channel = supabaseClient
                     .channel('public:requests')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
-                        console.log('Change received!', payload);
-                        fetchJobs(); // Refresh data on any change
+                        console.log('Realtime Update Received:', payload);
+                        fetchJobs();
+                        showToast('New update received!', 'info');
                     })
-                    .subscribe();
+                    .subscribe((status) => {
+                        console.log("Realtime Subscription Status:", status);
+                        if (status === 'SUBSCRIBED') {
+                            console.log("Successfully listening for changes...");
+                        }
+                        if (status === 'CHANNEL_ERROR') {
+                            console.error("Realtime Connection Error. Check Supabase 'Replication' settings.");
+                        }
+                    });
 
             } catch (e) {
                 console.error("Supabase init failed", e);
